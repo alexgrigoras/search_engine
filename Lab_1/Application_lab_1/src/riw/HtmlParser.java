@@ -1,3 +1,8 @@
+/*
+ * Title: Search engine application
+ * Author: Alexandru Grigoras
+ */
+
 package riw;
 
 import java.io.BufferedWriter;
