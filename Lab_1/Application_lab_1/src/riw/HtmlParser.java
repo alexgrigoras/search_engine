@@ -1,34 +1,36 @@
-/*
- * Title: Search engine application
- * Author: Alexandru Grigoras
+/**
+ * @title Search engine application
+ * @author Alexandru Grigoras
+ * @version 1.0 
  */
-
+	
 package riw;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URI;
-
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import riw.SpecialWords;
 
 public class HtmlParser {
-	
-	private static void log(String msg, String... vals) {
+	// Log data to console
+	private void log(String msg, String... vals) {
         System.out.println(String.format(msg, vals));
 	}
 	
-	public static void write_to_file(String str, BufferedWriter writer) 
+	// Write data to a specified file
+	private static void write_to_file(String str, BufferedWriter writer) 
 		throws IOException {
 	    	writer.append(str);
 	    	writer.append("\n");
 	}
 	
-	public static void erase_file(String str) {
+	// Erase content from a file
+	private static void erase_file(String str) {
 	  	File f = new File(str);
 	    if(f.exists()){
 	    	f.delete();
@@ -40,7 +42,8 @@ public class HtmlParser {
 	    }
 	}
 	
-	public static void parse_text(String str) {
+	// Get words from text
+	private static void parse_text(String str) {
 		int i = 0;
 		boolean setFlag = true;
 		StringBuilder temp_str = new StringBuilder("");
@@ -56,10 +59,11 @@ public class HtmlParser {
 					temp_str.append(str.charAt(i));
 					setFlag = true;
 			}
-		}
+		}		
 	}
 	
-	public static String parse_link(String str) {
+	// Parse the links and remove the fragment
+	private static String parse_link(String str) {
 		int i = 0;
 		boolean setFlag = true;
 		StringBuilder temp_str = new StringBuilder("");
@@ -76,26 +80,39 @@ public class HtmlParser {
 		
 		return temp_str.toString();
 	}
-
-	public static void main(String[] args) {
-		// file names
-		String fileNameText = "fisier_text.txt";
-		String fileNameLink = "fisier_link.txt";
+	
+	// Open the file from disk
+	private static BufferedWriter openFile(String fileName)
+	{
+		BufferedWriter writer = null;
 		
-		// open files to write
-		BufferedWriter writer1 = null;
-		BufferedWriter writer2 = null;
-		
-		erase_file(fileNameText);
-		erase_file(fileNameLink);
+		erase_file(fileName);
 		
 		try {
-			writer1 = new BufferedWriter(new FileWriter(fileNameText, true));
-			writer2 = new BufferedWriter(new FileWriter(fileNameLink, true));
+			writer = new BufferedWriter(new FileWriter(fileName, true));
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
 		
+		return writer;
+	}
+	
+	// Close an opened file
+	private static void closeFile(BufferedWriter writer)
+	{
+		try {
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	// MAIN function
+	public static void main(String[] args) {
+		// open files to write
+		BufferedWriter writer1 = openFile("fisier_text.txt");
+		BufferedWriter writer2 = openFile("fisier_link.txt");
+
 		// create document
 		Document doc;
 		
@@ -103,18 +120,15 @@ public class HtmlParser {
 		try {
 			// document title
 			doc = Jsoup.connect("http://en.wikipedia.org/").get();
-			//log(doc.title());
 			write_to_file(doc.title(), writer1);
 			
 			// meta elements
 			Elements metaElements = doc.select("meta");
 			for (Element meta : metaElements) {
 				if(meta.attr("name") == "keywords" || meta.attr("name") == "description") {
-					//log("\n\t%s", meta.attr("content"));
 					write_to_file(meta.attr("content"), writer1);
 				}
 				if(meta.attr("name") == "robots") {
-					//log("\n\t%s", meta.attr("content"));
 					write_to_file(meta.attr("content"), writer2);
 				}
 			}
@@ -136,12 +150,8 @@ public class HtmlParser {
 		}
 		
 		// close files
-		try {
-			writer1.close();
-			writer2.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		closeFile(writer1);
+		closeFile(writer2);
 	}
 
 }
