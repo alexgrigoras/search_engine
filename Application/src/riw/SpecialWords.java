@@ -7,6 +7,7 @@
 package riw;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashSet;
@@ -14,32 +15,24 @@ import java.util.HashSet;
 public class SpecialWords {
 	private HashSet<String> s_words = null;					// hash set with words
 	private String fileName;								// file name
-	BufferedReader reader;									// file reader
 	
 	// SpecialWords constructor
 	public SpecialWords(String _fileName) {
 		fileName = _fileName;
-		s_words = new HashSet<String>();
-		
-		try {
-			reader = new BufferedReader(new FileReader(fileName));
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		
+		s_words = new HashSet<String>();		
 		makeHashTable();
 	}
 	
 	// add word to hash
-	private void addToHash(String text)
+	private void addToHash(String _text)
 	{
-		s_words.add(text);
+		s_words.add(_text);
 	}
 	
 	// check if word exists in hash
-	public boolean hashContains(String text)
+	public boolean hashContains(String _text)
 	{
-		return s_words.contains(text);
+		return s_words.contains(_text);
 	}
 	
 	// show hash table
@@ -48,11 +41,28 @@ public class SpecialWords {
 		System.out.println(s_words.toString());
 	}
 	
+	// Close an opened file
+	private static void closeFile(BufferedReader reader)
+	{
+		try {
+			reader.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	// create the hash table
 	private void makeHashTable()
 	{
+		BufferedReader reader = null;									
 		String stringLine = "";
 
+		try {
+			reader = new BufferedReader(new FileReader(fileName));
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		
 		try {
 			while ((stringLine = reader.readLine()) != null) {
 				addToHash(stringLine);
@@ -60,6 +70,8 @@ public class SpecialWords {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
+		closeFile(reader);
 	}
 	
 	// MAIN function

@@ -16,27 +16,31 @@ public class IndexWords {
 	}	
 	
 	// add word to hash
-	public void addToHash(String text)
+	public void addToHash(String _text)
 	{
 		int oldFreq = 0;
 		
-		if(!hashContains(text)) {
-			ind_words.put(text, 1);
+		if(!hashContains(_text)) {
+			ind_words.put(_text, 1);
 		} else {
-			oldFreq = ind_words.get(text);
-			ind_words.replace(text, oldFreq, oldFreq + 1);
+			oldFreq = ind_words.get(_text);
+			ind_words.replace(_text, oldFreq, oldFreq + 1);
 		}
 		
 	}
 	
 	// check if word exists in hash
-	private boolean hashContains(String text)
+	private boolean hashContains(String _text)
 	{
-		return ind_words.containsKey(text);
+		return ind_words.containsKey(_text);
 	}
 	
 	public void showHash() {
 		System.out.println(ind_words.toString());
+	}
+	
+	public int hashWordsNr() {
+		return ind_words.size();
 	}
 	
 	// MAIN function

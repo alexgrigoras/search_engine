@@ -6,8 +6,10 @@
 	
 package riw;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import org.jsoup.Jsoup;
@@ -61,10 +63,10 @@ public class HtmlParser {
 			if(str.charAt(i) == ' ' && setFlag) {
 				text = temp_str.toString().toLowerCase();
 				if(exc_obj.hashContains(temp_str.toString().toLowerCase())) {
-					//System.out.println(" - exception");
+					// Exception
 					ind_obj.addToHash(text);			
 				} else if(!st_obj.hashContains(temp_str.toString().toLowerCase())) {
-					//System.out.println(" - dictionary");
+					// Dictionary
 					ind_obj.addToHash(text);
 				}
 				
@@ -126,13 +128,20 @@ public class HtmlParser {
 		}
 	}
 	
-	// MAIN function
-	public static void main(String[] args) {
-		// open files to write
+	// Close an opened file
+	private static void closeFile(BufferedReader reader)
+	{
+		try {
+			reader.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	
+	private static void processLink(String _link) {
 		BufferedWriter writerText = openFile("fisier_text.txt");
 		BufferedWriter writerLink = openFile("fisier_link.txt");
-
-		// create document
 		Document doc;
 		
 		// parse document
@@ -141,7 +150,7 @@ public class HtmlParser {
 			 * Extract data
 			 */
 			// document title
-			doc = Jsoup.connect("http://en.wikipedia.org/").get();
+			doc = Jsoup.connect(_link).get();
 			write_to_file(doc.title(), writerText);
 			
 			// meta elements
@@ -169,14 +178,53 @@ public class HtmlParser {
 			 */
 			// parse text
 			parse_text(doc.body().text());
-						
 		} catch (IOException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 		
 		// close files
 		closeFile(writerText);
 		closeFile(writerLink);
+	}
+	
+	private static void indexLinks(String _link, int _level, int _limitLinks) {
+		String link = _link;												
+		BufferedReader reader = null;
+		String stringLine = "";
+		int i;
+		int limit;
+		
+		try {
+			reader = new BufferedReader(new FileReader("fisier_link.txt"));
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+
+		processLink(link);
+		
+		for(i=0; i<_level; i++) {
+			
+			limit = 0;
+			
+			try {
+				while (((stringLine = reader.readLine()) != null) && (limit < _limitLinks)) {
+					if(stringLine != null && stringLine.length() != 0) {
+						// System.out.println(stringLine);
+						processLink(stringLine);
+						limit++;
+					}
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}			
+		}
+		
+		closeFile(reader);
+	}
+	
+	// MAIN function
+	public static void main(String[] args) {
+		indexLinks("http://en.wikipedia.org/", 1, 5);
 	}
 
 }
