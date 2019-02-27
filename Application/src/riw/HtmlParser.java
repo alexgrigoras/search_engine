@@ -1,7 +1,7 @@
 /**
  * @title Search engine application
  * @author Alexandru Grigoras
- * @version 1.0 
+ * @version 2.0 
  */
 	
 package riw;
@@ -15,6 +15,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import riw.SpecialWords;
+import riw.IndexWords;
 
 public class HtmlParser {
 	// Log data to console
@@ -44,13 +45,29 @@ public class HtmlParser {
 	
 	// Get words from text
 	private static void parse_text(String str) {
+		// variables for extracting words
 		int i = 0;
 		boolean setFlag = true;
 		StringBuilder temp_str = new StringBuilder("");
+		String text = "";
 		
-		for(i=0; i<str.length();i++){
-			if(str.charAt(i) == ' ' && setFlag){
-				System.out.println(temp_str);
+		// create hash for exceptions and stopwords
+		SpecialWords st_obj = new SpecialWords("stop_words.txt");
+		SpecialWords exc_obj = new SpecialWords("exception_words.txt");
+		IndexWords ind_obj = new IndexWords();
+		
+		// parse text
+		for(i=0; i<str.length();i++) {
+			if(str.charAt(i) == ' ' && setFlag) {
+				text = temp_str.toString().toLowerCase();
+				if(exc_obj.hashContains(temp_str.toString().toLowerCase())) {
+					//System.out.println(" - exception");
+					ind_obj.addToHash(text);			
+				} else if(!st_obj.hashContains(temp_str.toString().toLowerCase())) {
+					//System.out.println(" - dictionary");
+					ind_obj.addToHash(text);
+				}
+				
 				temp_str.delete(0, temp_str.length());
 				setFlag = false;
 			}
@@ -59,7 +76,9 @@ public class HtmlParser {
 					temp_str.append(str.charAt(i));
 					setFlag = true;
 			}
-		}		
+		}
+		
+		ind_obj.showHash();
 	}
 	
 	// Parse the links and remove the fragment
@@ -110,48 +129,54 @@ public class HtmlParser {
 	// MAIN function
 	public static void main(String[] args) {
 		// open files to write
-		BufferedWriter writer1 = openFile("fisier_text.txt");
-		BufferedWriter writer2 = openFile("fisier_link.txt");
+		BufferedWriter writerText = openFile("fisier_text.txt");
+		BufferedWriter writerLink = openFile("fisier_link.txt");
 
 		// create document
 		Document doc;
 		
 		// parse document
 		try {
+			/*
+			 * Extract data
+			 */
 			// document title
 			doc = Jsoup.connect("http://en.wikipedia.org/").get();
-			write_to_file(doc.title(), writer1);
+			write_to_file(doc.title(), writerText);
 			
 			// meta elements
 			Elements metaElements = doc.select("meta");
 			for (Element meta : metaElements) {
 				if(meta.attr("name") == "keywords" || meta.attr("name") == "description") {
-					write_to_file(meta.attr("content"), writer1);
+					write_to_file(meta.attr("content"), writerText);
 				}
 				if(meta.attr("name") == "robots") {
-					write_to_file(meta.attr("content"), writer2);
+					write_to_file(meta.attr("content"), writerLink);
 				}
 			}
 			
 			// a attributes
 			Elements aElements = doc.select("a");
 			for (Element a : aElements) {
-				//log("%s\n\t%s", a.attr("title"), a.absUrl("href"));				
-				write_to_file(parse_link(a.absUrl("href")), writer2);
+				write_to_file(parse_link(a.absUrl("href")), writerLink);
 			}
 			
-			// html text
-			write_to_file(doc.body().text(), writer1);
+			// text from body
+			write_to_file(doc.body().text(), writerText);
 			
-			// parse_text 
+			/*
+			 * Process data
+			 */
+			// parse text
 			parse_text(doc.body().text());
+						
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		
 		// close files
-		closeFile(writer1);
-		closeFile(writer2);
+		closeFile(writerText);
+		closeFile(writerLink);
 	}
 
 }

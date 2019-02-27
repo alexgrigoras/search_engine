@@ -8,7 +8,7 @@ Automatic-Module-Name: org.jsoup
 Bundle-License: https://jsoup.org/license
 Bundle-SymbolicName: org.jsoup
 Built-By: alex_
-Bnd-LastModified: 1550593802773
+Bnd-LastModified: 1551286140452
 Bundle-ManifestVersion: 2
 Bundle-DocURL: https://jsoup.org/
 Bundle-Vendor: Jonathan Hedley

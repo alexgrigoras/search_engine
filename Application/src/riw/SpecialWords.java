@@ -1,26 +1,20 @@
 /**
  * @title Search engine application
  * @author Alexandru Grigoras
- * @version 1.0 
+ * @version 2.0 
  */
 
 package riw;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashSet;
 
 public class SpecialWords {
-
-	// hash set with words
-	private HashSet<String> s_words = null;
-	// file name
-	private String fileName;
-	// file reader
-	BufferedReader reader;
+	private HashSet<String> s_words = null;					// hash set with words
+	private String fileName;								// file name
+	BufferedReader reader;									// file reader
 	
 	// SpecialWords constructor
 	public SpecialWords(String _fileName) {
@@ -43,7 +37,7 @@ public class SpecialWords {
 	}
 	
 	// check if word exists in hash
-	private boolean hashContains(String text)
+	public boolean hashContains(String text)
 	{
 		return s_words.contains(text);
 	}
@@ -61,19 +55,18 @@ public class SpecialWords {
 
 		try {
 			while ((stringLine = reader.readLine()) != null) {
-				//System.out.print(stringLine + ' ');
 				addToHash(stringLine);
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
 	// MAIN function
 	public static void main(String[] args) {
-		SpecialWords st_obj = new SpecialWords("stopwords.txt");
+		SpecialWords st_obj = new SpecialWords("stop_words.txt");
 		st_obj.showHashTable();
+		SpecialWords exc_obj = new SpecialWords("exception_words.txt");
+		exc_obj.showHashTable();
 	}
-
 }
