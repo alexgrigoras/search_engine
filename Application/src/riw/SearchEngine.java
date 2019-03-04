@@ -240,8 +240,8 @@ public class SearchEngine {
 	// MAIN function
 	public static void main(String[] args) {
 		SearchEngine parser = new SearchEngine();
-		int level = 4;
-		int links = 10;
+		int level = 10;
+		int links = 100;
 		
 		parser.indexLinks("http://en.wikipedia.org/", level, links);
 	}
