@@ -22,7 +22,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class HtmlParser {
+public class SearchEngine {
 	/*
 	 * Arguments
 	 */
@@ -36,7 +36,7 @@ public class HtmlParser {
 	/*
 	 * Methods
 	 */
-	public HtmlParser()
+	public SearchEngine()
 	{
 		st_obj = new SpecialWords("stop_words.txt");
 		exc_obj = new SpecialWords("exception_words.txt");
@@ -239,7 +239,7 @@ public class HtmlParser {
 	
 	// MAIN function
 	public static void main(String[] args) {
-		HtmlParser parser = new HtmlParser();
+		SearchEngine parser = new SearchEngine();
 		int level = 4;
 		int links = 10;
 		
