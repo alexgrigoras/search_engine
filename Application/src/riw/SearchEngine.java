@@ -6,7 +6,6 @@
 	
 package riw;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -17,8 +16,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import riw.SpecialWords;
 import riw.IndexWords;
-
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -29,10 +27,10 @@ public class SearchEngine {
 	// create hash for exceptions and stopwords
 	private SpecialWords st_obj;
 	private SpecialWords exc_obj;
-	private IndexWords ind_obj;
 	// queue for processing links
-	private Queue<String> queueLinks;
-	
+	private Queue<String> queue_links;
+	private HashMap<String, IndexWords> doc_keys;	
+	private HashMap<String, LinksList> word_links;
 	/*
 	 * Methods
 	 */
@@ -40,8 +38,8 @@ public class SearchEngine {
 	{
 		st_obj = new SpecialWords("stop_words.txt");
 		exc_obj = new SpecialWords("exception_words.txt");
-		ind_obj = new IndexWords();
-		queueLinks = new LinkedList<String>();
+		doc_keys = new HashMap<String, IndexWords>();
+		queue_links = new LinkedList<String>();
 	}
 	
 	// Log data to console
@@ -86,7 +84,7 @@ public class SearchEngine {
 	}
 	
 	// Get words from text
-	private void parse_text(String str) {
+	private void parse_text(String str, IndexWords index_words) {
 		// variables for extracting words
 		int i = 0;
 		boolean setFlag = true;
@@ -99,10 +97,10 @@ public class SearchEngine {
 				text = temp_str.toString().toLowerCase();
 				if(exc_obj.hashContains(temp_str.toString().toLowerCase())) {
 					// Exception
-					ind_obj.addToHash(text);			
+					index_words.addToHash(text);			
 				} else if(!st_obj.hashContains(temp_str.toString().toLowerCase())) {
 					// Dictionary
-					ind_obj.addToHash(text);
+					index_words.addToHash(text);
 				}
 				
 				temp_str.delete(0, temp_str.length());
@@ -160,13 +158,37 @@ public class SearchEngine {
 			e.printStackTrace();
 		}
 	}
-
+	
+	// add word to hash
+	public void addToHash(String _doc, IndexWords _words)
+	{
+		if(!hashContains(_doc)) {
+			doc_keys.put(_doc, _words);
+		}		
+	}
+	
+	// check if word exists in hash
+	private boolean hashContains(String _doc)
+	{
+		return doc_keys.containsKey(_doc);
+	}
+	
+	public void showHash() {
+		for (String doc: doc_keys.keySet()) {
+            String key = doc.toString();
+            IndexWords value = doc_keys.get(doc);  
+            System.out.print("<" + key + ", ");  
+            value.showHash();
+            System.out.println(">");
+		} 
+	}
 	
 	// Process the links
 	private void processLink(String _link) {
-		BufferedWriter writerText = openFile("fisier_text.txt");
-		BufferedWriter writerLink = openFile("fisier_link.txt");
+		BufferedWriter writerText = openFile("./files/output/fisier_text.txt");
+		BufferedWriter writerLink = openFile("./files/output/fisier_link.txt");
 		Document doc;
+		IndexWords ind_obj = new IndexWords();
 
 		try {
 			/*
@@ -192,7 +214,7 @@ public class SearchEngine {
 			for (Element a : aElements) {
 				if(a.absUrl("href") != "") {
 					write_to_file(parse_link(a.absUrl("href")), writerLink);
-					queueLinks.add(parse_link(a.absUrl("href")));
+					queue_links.add(parse_link(a.absUrl("href")));
 				}	
 			}
 			
@@ -203,7 +225,10 @@ public class SearchEngine {
 			 * Process data
 			 */
 			// parse text
-			parse_text(doc.body().text());
+			parse_text(doc.body().text(), ind_obj);
+			// add to hash
+			addToHash(_link, ind_obj);
+			
 		} catch (IOException e) {
 			//e.printStackTrace();
 		}
@@ -221,11 +246,11 @@ public class SearchEngine {
 
 		processLink(link);
 		
-		for(i=1; i<_level; i++) {
+		for(i=1; i<=_level; i++) {
 			limit = 0;
 
-			while(!queueLinks.isEmpty() && (limit < _limitLinks || _limitLinks == 0)) {
-			  String element = queueLinks.poll();
+			while(!queue_links.isEmpty() && (limit < _limitLinks || _limitLinks == 0)) {
+			  String element = queue_links.poll();
 			  
 			  processLink(element);
 			  
@@ -233,15 +258,14 @@ public class SearchEngine {
 			}
 		}
 		
-		System.out.print(ind_obj.hashWordsNr() + " -> ");
-		ind_obj.showHash();
+		showHash();
 	}
 	
 	// MAIN function
 	public static void main(String[] args) {
 		SearchEngine parser = new SearchEngine();
-		int level = 10;
-		int links = 100;
+		int level = 1;
+		int links = 10;
 		
 		parser.indexLinks("http://en.wikipedia.org/", level, links);
 	}

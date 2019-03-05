@@ -36,7 +36,21 @@ public class IndexWords {
 	}
 	
 	public void showHash() {
-		System.out.println(ind_words.toString());
+		//System.out.print(ind_words.toString());
+		int nr = 0;
+		System.out.print("{ ");  
+		for (String word: ind_words.keySet()) {
+			nr++;
+            String key = word.toString();
+            int value = ind_words.get(word);  
+            System.out.print(key + ": " + value);  
+            if(ind_words.size() > nr )
+            {
+            	System.out.print(", ");
+            }
+		} 
+		System.out.print(" }");  
+		
 	}
 	
 	public int hashWordsNr() {
