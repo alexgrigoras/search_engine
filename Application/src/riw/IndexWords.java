@@ -9,10 +9,10 @@ package riw;
 import java.util.HashMap;
 
 public class IndexWords {
-	private HashMap<String, Integer> ind_words = null;				// hash set with words
+	private HashMap<String, Integer> indWords = null;				// hash set with words
 	
 	public IndexWords() {
-	    ind_words = new HashMap<String, Integer>();
+	    indWords = new HashMap<String, Integer>();
 	}	
 	
 	// add word to hash
@@ -21,30 +21,29 @@ public class IndexWords {
 		int oldFreq = 0;
 		
 		if(!hashContains(_text)) {
-			ind_words.put(_text, 1);
+			indWords.put(_text, 1);
 		} else {
-			oldFreq = ind_words.get(_text);
-			ind_words.replace(_text, oldFreq, oldFreq + 1);
+			oldFreq = indWords.get(_text);
+			indWords.replace(_text, oldFreq, oldFreq + 1);
 		}
-		
 	}
 	
 	// check if word exists in hash
 	private boolean hashContains(String _text)
 	{
-		return ind_words.containsKey(_text);
+		return indWords.containsKey(_text);
 	}
 	
 	public void showHash() {
 		//System.out.print(ind_words.toString());
 		int nr = 0;
 		System.out.print("{ ");  
-		for (String word: ind_words.keySet()) {
+		for (String word: indWords.keySet()) {
 			nr++;
             String key = word.toString();
-            int value = ind_words.get(word);  
+            int value = indWords.get(word);  
             System.out.print(key + ": " + value);  
-            if(ind_words.size() > nr )
+            if(indWords.size() > nr )
             {
             	System.out.print(", ");
             }
@@ -53,8 +52,12 @@ public class IndexWords {
 		
 	}
 	
+	public HashMap<String, Integer> getHashMap() {
+		return indWords;
+	}
+	
 	public int hashWordsNr() {
-		return ind_words.size();
+		return indWords.size();
 	}
 	
 	// MAIN function

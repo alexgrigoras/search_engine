@@ -183,6 +183,32 @@ public class SearchEngine {
 		return docKeys.containsKey(_doc);
 	}
 	
+	// add word to hash
+	private void addToHash(String _doc, Link _link)
+	{
+		System.out.println("Added doc: " + _doc);
+		System.out.println("Added link: " + _link.getLink());
+		if(!hashLinkContains(_doc)) {
+			LinksList ll = new LinksList(_link);
+			wordLinks.put(_doc, ll);
+			System.out.println("Added link");
+		}
+		else {
+			System.out.println("Replaced link");
+			/*
+			LinksList ll = (LinksList)wordLinks.get(_doc);
+			ll.hasLink(_link.getLink());
+			wordLinks.replace(_doc, ll);
+			*/
+		}
+	}
+	
+	// check if word exists in hash
+	private boolean hashLinkContains(String _doc)
+	{
+		return wordLinks.containsKey(_doc);
+	}
+	
 	private void showHash() {
 		for (String doc: docKeys.keySet()) {
             String key = doc.toString();
@@ -320,7 +346,7 @@ public class SearchEngine {
         }		
 	}
 
-	public void indexFiles(int _limitLinks) {
+	private void indexFiles(int _limitLinks) {
 		int limit;
 		int i;
 
@@ -333,6 +359,25 @@ public class SearchEngine {
 		  
 		  limit++;
 		}
+	}
+	
+	private void inverseIndex() {
+		for (String doc: docKeys.keySet()) {
+            String key = doc.toString();
+            IndexWords value = docKeys.get(doc);
+            
+            HashMap<String, Integer> indWords = value.getHashMap();
+            
+            for (String docW: indWords.keySet()) {
+                String keyW = docW.toString();
+                int valueW = indWords.get(docW);
+                
+                Link link = new Link(keyW, valueW);
+                addToHash(key, link);
+            }
+		}
+		
+		//System.out.println(wordLinks.toString());
 	}
 	
 	// MAIN function
@@ -349,7 +394,9 @@ public class SearchEngine {
 		
 		parser.indexFiles(links);
 		
-		parser.showHash();
+		//parser.showHash();
+		
+		parser.inverseIndex();
 	}
 
 }
