@@ -185,6 +185,7 @@ public class SearchEngine {
 	
 	// Process the links
 	private void processLink(String _link) {
+		File input = new File("./files/input/wikipedia.html");
 		BufferedWriter writerText = openFile("./files/output/fisier_text.txt");
 		BufferedWriter writerLink = openFile("./files/output/fisier_link.txt");
 		Document doc;
@@ -195,6 +196,7 @@ public class SearchEngine {
 			 * Extract data
 			 */
 			// document title
+			//doc = Jsoup.parse(input, null, _link);
 			doc = Jsoup.connect(_link).get();
 			write_to_file(doc.title(), writerText);
 			
@@ -264,7 +266,7 @@ public class SearchEngine {
 	// MAIN function
 	public static void main(String[] args) {
 		SearchEngine parser = new SearchEngine();
-		int level = 1;
+		int level = 0;
 		int links = 10;
 		
 		parser.indexLinks("http://en.wikipedia.org/", level, links);
