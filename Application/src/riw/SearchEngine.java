@@ -40,10 +40,10 @@ public class SearchEngine {
 	{
 		stopwordsObj = new SpecialWords("./files/special_words/stop_words.txt");
 		exceptionsObj = new SpecialWords("./files/special_words/exception_words.txt");
-		indexObj = new IndexWords();
 		docKeys = new HashMap<String, IndexWords>();
 		filesQueue = new LinkedList<String>();
 		wordLinks = new HashMap<String, LinksList>();
+		indexObj = new IndexWords();
 	}
 	
 	// Log data to console
@@ -304,7 +304,8 @@ public class SearchEngine {
 	private void processTextFile(String _path) {
 		StringBuffer stringBuffer = new StringBuffer();
 		String line = null;
-		BufferedReader reader = null;									
+		BufferedReader reader = null;	
+		indexObj = new IndexWords();
 
 		/*
 		 * Extract data
@@ -369,6 +370,9 @@ public class SearchEngine {
         }		
 	}
 
+	/*
+	 * Direct Index
+	 */
 	private void indexFiles(int _limitLinks) {
 		int limit;
 		int i;
@@ -384,6 +388,9 @@ public class SearchEngine {
 		}
 	}
 	
+	/*
+	 * Inverse Index
+	 */
 	private void inverseIndex() {
 		for (String doc: docKeys.keySet()) {
             String key = doc.toString();
@@ -405,18 +412,19 @@ public class SearchEngine {
 	// MAIN function
 	public static void main(String[] args) {
 		SearchEngine parser = new SearchEngine();
-		int level = 1;
-		int links = 0;
+		int level = 3;
+		int links = 5;
 		String link = "http://en.wikipedia.org/";
 		String path = "./files/input/wikipedia_org.html";
+		String directory = "F:\\Materiale_an_4_ac\\eclipseriw";
 		
 		//parser.processHTML(link, path);
 		
-		parser.getFiles("C:\\Users\\alex_\\Desktop\\Test_Riw", level, 0);
+		parser.getFiles(directory, level, 0);
 		
 		parser.indexFiles(links);
 		
-		parser.showDirectIndex();
+		//parser.showDirectIndex();
 		
 		parser.inverseIndex();
 		
