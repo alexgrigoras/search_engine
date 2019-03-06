@@ -23,6 +23,19 @@ class Link
 		return link;
 	}
 	
+	public int getFrequency() {
+		return frequency;
+	}
+	
+	public void addToFrequency(int _frequency) {
+		frequency = _frequency;
+	}
+	
+	public String toString() {
+		return link + ": " + frequency;
+		
+	}
+	
 	public boolean verifyLink(String _link_name) {
 		if(link.equals(_link_name)) {
 			return true;
@@ -51,9 +64,13 @@ public class LinksList {
 		list_strings.add(_link);
 	}
 	
-	public void addLink(String _link)
+	public void addLink(String link_name) {
+		list_strings.add(new Link(link_name));
+	}
+	
+	public void addLink(Link _link)
 	{
-		list_strings.add(new Link(_link));
+		list_strings.add(_link);
 	}
 	
 	public Link hasLink(String _link_name) {
@@ -63,6 +80,21 @@ public class LinksList {
 			}
 		}
 		return null;
+	}
+	
+	public void show() {
+		int nr = 0;
+		
+        System.out.print("{ ");  
+        for(Link l: list_strings) {
+        	nr++;
+        	System.out.print(l.toString());
+            if(list_strings.size() > nr )
+            {
+            	System.out.print(", ");
+            }           
+        }
+        System.out.print("}");
 	}
 	
 	public static void main(String[] args) {

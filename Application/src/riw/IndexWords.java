@@ -35,7 +35,6 @@ public class IndexWords {
 	}
 	
 	public void showHash() {
-		//System.out.print(ind_words.toString());
 		int nr = 0;
 		System.out.print("{ ");  
 		for (String word: indWords.keySet()) {
@@ -48,8 +47,7 @@ public class IndexWords {
             	System.out.print(", ");
             }
 		} 
-		System.out.print(" }");  
-		
+		System.out.print(" }");
 	}
 	
 	public HashMap<String, Integer> getHashMap() {

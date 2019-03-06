@@ -43,6 +43,7 @@ public class SearchEngine {
 		indexObj = new IndexWords();
 		docKeys = new HashMap<String, IndexWords>();
 		filesQueue = new LinkedList<String>();
+		wordLinks = new HashMap<String, LinksList>();
 	}
 	
 	// Log data to console
@@ -169,12 +170,15 @@ public class SearchEngine {
 		}
 	}
 	
+	/*
+	 * Direct Index
+	 */
 	// add word to hash
 	private void addToHash(String _doc, IndexWords _words)
 	{
 		if(!hashContains(_doc)) {
 			docKeys.put(_doc, _words);
-		}		
+		}
 	}
 	
 	// check if word exists in hash
@@ -183,23 +187,35 @@ public class SearchEngine {
 		return docKeys.containsKey(_doc);
 	}
 	
+	private void showDirectIndex() {
+		for (String doc: docKeys.keySet()) {
+            String key = doc.toString();
+            IndexWords value = docKeys.get(doc);  
+            System.out.print("<" + key + ", ");  
+            value.showHash();
+            System.out.println(">");
+		} 
+	}
+	
+	/*
+	 * Inverse Index
+	 */
 	// add word to hash
-	private void addToHash(String _doc, Link _link)
+	private void addToHash(String _text, Link _link)
 	{
-		System.out.println("Added doc: " + _doc);
-		System.out.println("Added link: " + _link.getLink());
-		if(!hashLinkContains(_doc)) {
+		// System.out.print("Add text: " + _text);
+		// System.out.print(" and link: " + _link.getLink());
+		
+		if(!hashLinkContains(_text)) {
 			LinksList ll = new LinksList(_link);
-			wordLinks.put(_doc, ll);
-			System.out.println("Added link");
+			wordLinks.put(_text, ll);
+			// System.out.println(" -> Added link");
 		}
 		else {
-			System.out.println("Replaced link");
-			/*
-			LinksList ll = (LinksList)wordLinks.get(_doc);
-			ll.hasLink(_link.getLink());
-			wordLinks.replace(_doc, ll);
-			*/
+			// System.out.println(" -> Replaced link");
+			LinksList ll = (LinksList)wordLinks.get(_text);
+			ll.addLink(_link);
+			wordLinks.replace(_text, ll);
 		}
 	}
 	
@@ -209,14 +225,21 @@ public class SearchEngine {
 		return wordLinks.containsKey(_doc);
 	}
 	
-	private void showHash() {
-		for (String doc: docKeys.keySet()) {
+	private void showInverseIndex() {
+		int nr = 0;
+		System.out.print("< ");  
+		for (String doc: wordLinks.keySet()) {
+			nr++;
             String key = doc.toString();
-            IndexWords value = docKeys.get(doc);  
-            System.out.print("<" + key + ", ");  
-            value.showHash();
-            System.out.println(">");
-		} 
+            LinksList value = wordLinks.get(doc);
+            System.out.print(key + ": ");
+            value.show();
+            if(wordLinks.size() > nr )
+            {
+            	System.out.print(", ");
+            }            
+		}
+		System.out.println(">");
 	}
 	
 	// Process the HTML file
@@ -372,12 +395,11 @@ public class SearchEngine {
                 String keyW = docW.toString();
                 int valueW = indWords.get(docW);
                 
-                Link link = new Link(keyW, valueW);
-                addToHash(key, link);
+                Link link = new Link(key, valueW);
+                
+                addToHash(keyW, link);
             }
 		}
-		
-		//System.out.println(wordLinks.toString());
 	}
 	
 	// MAIN function
@@ -390,13 +412,15 @@ public class SearchEngine {
 		
 		//parser.processHTML(link, path);
 		
-		parser.getFiles("F:\\Materiale_an_4_ac\\eclipseriw", level, 0);
+		parser.getFiles("C:\\Users\\alex_\\Desktop\\Test_Riw", level, 0);
 		
 		parser.indexFiles(links);
 		
-		//parser.showHash();
+		parser.showDirectIndex();
 		
 		parser.inverseIndex();
+		
+		parser.showInverseIndex();
 	}
 
 }
