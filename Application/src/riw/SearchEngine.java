@@ -187,6 +187,7 @@ public class SearchEngine {
 		return docKeys.containsKey(_doc);
 	}
 	
+	// display words from hash (direct indexing)
 	private void showDirectIndex() {
 		for (String doc: docKeys.keySet()) {
             String key = doc.toString();
@@ -203,16 +204,11 @@ public class SearchEngine {
 	// add word to hash
 	private void addToHash(String _text, Link _link)
 	{
-		// System.out.print("Add text: " + _text);
-		// System.out.print(" and link: " + _link.getLink());
-		
 		if(!hashLinkContains(_text)) {
 			LinksList ll = new LinksList(_link);
 			wordLinks.put(_text, ll);
-			// System.out.println(" -> Added link");
 		}
 		else {
-			// System.out.println(" -> Replaced link");
 			LinksList ll = (LinksList)wordLinks.get(_text);
 			ll.addLink(_link);
 			wordLinks.replace(_text, ll);
@@ -224,7 +220,8 @@ public class SearchEngine {
 	{
 		return wordLinks.containsKey(_doc);
 	}
-	
+
+	// display words from hash (inverse indexing)
 	private void showInverseIndex() {
 		int nr = 0;
 		System.out.print("< ");  
@@ -255,7 +252,7 @@ public class SearchEngine {
 			/*
 			 * Extract data
 			 */
-			doc = Jsoup.parse(input, null);			// get document from local file	
+			doc = Jsoup.parse(input, null);					// get document from local file	
 			// doc = Jsoup.connect(_link).get();			// get document from web
 			writeToFile(doc.title(), writerData);
 			
@@ -300,7 +297,7 @@ public class SearchEngine {
 		closeFile(writerLink);
 	}
 	
-	// Process the HTML file
+	// Process a text file (.txt extension)
 	private void processTextFile(String _path) {
 		StringBuffer stringBuffer = new StringBuffer();
 		String line = null;
@@ -336,16 +333,17 @@ public class SearchEngine {
 		closeFile(reader);
 	}
 	
+	// returns the file extension from the file name
 	private String getFileExtension(File file) {
 	    String name = file.getName();
 	    int lastIndexOf = name.lastIndexOf(".");
 	    if (lastIndexOf == -1) {
-	        return ""; // empty extension
+	        return ""; 											// empty extension
 	    }
 	    return name.substring(lastIndexOf + 1).toString();
 	}
 	
-	// processes the links and indexes the words
+	// searches for the files in a specified folder recursively
 	private void getFiles(String _folder_path, int max_level, int current_level) {
 		
 		if(current_level > max_level && max_level != 0) {
@@ -370,9 +368,7 @@ public class SearchEngine {
         }		
 	}
 
-	/*
-	 * Direct Index
-	 */
+	// indexes the files in the queue
 	private void indexFiles(int _limitLinks) {
 		int limit;
 		int i;
@@ -388,9 +384,7 @@ public class SearchEngine {
 		}
 	}
 	
-	/*
-	 * Inverse Index
-	 */
+	// create the inverse index from the direct indexing
 	private void inverseIndex() {
 		for (String doc: docKeys.keySet()) {
             String key = doc.toString();
@@ -416,7 +410,7 @@ public class SearchEngine {
 		int links = 5;
 		String link = "http://en.wikipedia.org/";
 		String path = "./files/input/wikipedia_org.html";
-		String directory = "F:\\Materiale_an_4_ac\\eclipseriw";
+		String directory = "E:\\Facultate\\Anul 4\\Semestrul I";
 		
 		//parser.processHTML(link, path);
 		
