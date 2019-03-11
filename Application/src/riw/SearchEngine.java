@@ -36,6 +36,7 @@ public class SearchEngine {
 	/*
 	 * Methods
 	 */
+	// Class constructor
 	public SearchEngine()
 	{
 		stopwordsObj = new SpecialWords("./files/special_words/stop_words.txt");
@@ -173,7 +174,7 @@ public class SearchEngine {
 	/*
 	 * Direct Index
 	 */
-	// add word to hash
+	// Add word to hash
 	private void addToHash(String _doc, IndexWords _words)
 	{
 		if(!hashContains(_doc)) {
@@ -181,13 +182,13 @@ public class SearchEngine {
 		}
 	}
 	
-	// check if word exists in hash
+	// Check if word exists in hash
 	private boolean hashContains(String _doc)
 	{
 		return docKeys.containsKey(_doc);
 	}
 	
-	// display words from hash (direct indexing)
+	// Display words from hash (direct indexing)
 	private void showDirectIndex() {
 		for (String doc: docKeys.keySet()) {
             String key = doc.toString();
@@ -201,7 +202,7 @@ public class SearchEngine {
 	/*
 	 * Inverse Index
 	 */
-	// add word to hash
+	// Add word to hash
 	private void addToHash(String _text, Link _link)
 	{
 		if(!hashLinkContains(_text)) {
@@ -215,13 +216,13 @@ public class SearchEngine {
 		}
 	}
 	
-	// check if word exists in hash
+	// Check if word exists in hash
 	private boolean hashLinkContains(String _doc)
 	{
 		return wordLinks.containsKey(_doc);
 	}
 
-	// display words from hash (inverse indexing)
+	// Display words from hash (inverse indexing)
 	private void showInverseIndex() {
 		int nr = 0;
 		System.out.print("< ");  
@@ -333,7 +334,7 @@ public class SearchEngine {
 		closeFile(reader);
 	}
 	
-	// returns the file extension from the file name
+	// Returns the file extension from the file name
 	private String getFileExtension(File file) {
 	    String name = file.getName();
 	    int lastIndexOf = name.lastIndexOf(".");
@@ -343,7 +344,7 @@ public class SearchEngine {
 	    return name.substring(lastIndexOf + 1).toString();
 	}
 	
-	// searches for the files in a specified folder recursively
+	// Searches for the files in a specified folder recursively
 	private void getFiles(String _folder_path, int max_level, int current_level) {
 		
 		if(current_level > max_level && max_level != 0) {
@@ -368,7 +369,7 @@ public class SearchEngine {
         }		
 	}
 
-	// indexes the files in the queue
+	// Indexes the files in the queue
 	private void indexFiles(int _limitLinks) {
 		int limit;
 		int i;
@@ -384,7 +385,7 @@ public class SearchEngine {
 		}
 	}
 	
-	// create the inverse index from the direct indexing
+	// Create the inverse index from the direct indexing
 	private void inverseIndex() {
 		for (String doc: docKeys.keySet()) {
             String key = doc.toString();
