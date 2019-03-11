@@ -6,40 +6,44 @@
 	
 package riw;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Queue;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import riw.SpecialWords;
-import riw.IndexWords;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Queue;
 
 public class SearchEngine {
 	/*
 	 * Arguments
 	 */
-	// create hash for exceptions and stopwords
-	private SpecialWords st_obj;
-	private SpecialWords exc_obj;
-	// queue for processing links
-	private Queue<String> queue_links;
-	private HashMap<String, IndexWords> doc_keys;	
-	private HashMap<String, LinksList> word_links;
+	private SpecialWords stopwordsObj;						// create hash for exceptions and stopwords
+	private SpecialWords exceptionsObj;
+	private IndexWords indexObj;
+	
+	private Queue<String> filesQueue;						// queue for processing links
+	private HashMap<String, IndexWords> docKeys;	
+	private HashMap<String, LinksList> wordLinks;
+	
 	/*
 	 * Methods
 	 */
 	public SearchEngine()
 	{
-		st_obj = new SpecialWords("stop_words.txt");
-		exc_obj = new SpecialWords("exception_words.txt");
-		doc_keys = new HashMap<String, IndexWords>();
-		queue_links = new LinkedList<String>();
+		stopwordsObj = new SpecialWords("./files/special_words/stop_words.txt");
+		exceptionsObj = new SpecialWords("./files/special_words/exception_words.txt");
+		docKeys = new HashMap<String, IndexWords>();
+		filesQueue = new LinkedList<String>();
+		wordLinks = new HashMap<String, LinksList>();
+		indexObj = new IndexWords();
 	}
 	
 	// Log data to console
@@ -64,14 +68,14 @@ public class SearchEngine {
 	}
 	
 	// Write data to a specified file
-	private void write_to_file(String str, BufferedWriter writer) 
+	private void writeToFile(String str, BufferedWriter writer) 
 		throws IOException {
 	    	writer.append(str);
 	    	writer.append("\n");
 	}
 	
 	// Erase content from a file
-	private void erase_file(String str) {
+	private void eraseFile(String str) {
 	  	File f = new File(str);
 	    if(f.exists()){
 	    	f.delete();
@@ -84,45 +88,43 @@ public class SearchEngine {
 	}
 	
 	// Get words from text
-	private void parse_text(String str, IndexWords index_words) {
+	private void parseText(String str, IndexWords indexWords) {
 		// variables for extracting words
 		int i = 0;
 		boolean setFlag = true;
-		StringBuilder temp_str = new StringBuilder("");
+		StringBuilder tempStr = new StringBuilder("");
 		String text = "";
 		
 		// parse text
 		for(i=0; i<str.length();i++) {
 			if(str.charAt(i) == ' ' && setFlag) {
-				text = temp_str.toString().toLowerCase();
-				if(exc_obj.hashContains(temp_str.toString().toLowerCase())) {
+				text = tempStr.toString().toLowerCase();
+				if(exceptionsObj.hashContains(tempStr.toString().toLowerCase())) {
 					// Exception
-					index_words.addToHash(text);			
-				} else if(!st_obj.hashContains(temp_str.toString().toLowerCase())) {
+					indexWords.addToHash(text);			
+				} else if(!stopwordsObj.hashContains(tempStr.toString().toLowerCase())) {
 					// Dictionary
-					index_words.addToHash(text);
+					indexWords.addToHash(text);
 				}
-				
-				temp_str.delete(0, temp_str.length());
+				tempStr = new StringBuilder("");  
 				setFlag = false;
 			}
 			else if(Character.isLetter(str.charAt(i))) {
-					temp_str = new StringBuilder(temp_str);  
-					temp_str.append(str.charAt(i));
+					tempStr.append(str.charAt(i));
 					setFlag = true;
 			}
 		}
 	}
 	
 	// Parse the links and remove the fragment
-	private String parse_link(String str) {
+	private String parseLink(String str) {
 		int i = 0;
 		boolean setFlag = true;
-		StringBuilder temp_str = new StringBuilder("");
+		StringBuilder tempStr = new StringBuilder("");
 		
 		for(i=0; i<str.length() && setFlag;i++){
 			if(str.charAt(i) != '#'){
-				temp_str.append(str.charAt(i));
+				tempStr.append(str.charAt(i));
 			}
 			else 
 			{
@@ -130,7 +132,7 @@ public class SearchEngine {
 			}
 		}
 		
-		return temp_str.toString();
+		return tempStr.toString();
 	}
 	
 	// Open the file from disk
@@ -138,7 +140,7 @@ public class SearchEngine {
 	{
 		BufferedWriter writer = null;
 		
-		erase_file(fileName);
+		eraseFile(fileName);
 		
 		try {
 			writer = new BufferedWriter(new FileWriter(fileName, true));
@@ -159,55 +161,112 @@ public class SearchEngine {
 		}
 	}
 	
+	private static void closeFile(BufferedReader reader)
+	{
+		try {
+			reader.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/*
+	 * Direct Index
+	 */
 	// add word to hash
-	public void addToHash(String _doc, IndexWords _words)
+	private void addToHash(String _doc, IndexWords _words)
 	{
 		if(!hashContains(_doc)) {
-			doc_keys.put(_doc, _words);
-		}		
+			docKeys.put(_doc, _words);
+		}
 	}
 	
 	// check if word exists in hash
 	private boolean hashContains(String _doc)
 	{
-		return doc_keys.containsKey(_doc);
+		return docKeys.containsKey(_doc);
 	}
 	
-	public void showHash() {
-		for (String doc: doc_keys.keySet()) {
+	private void showDirectIndex() {
+		for (String doc: docKeys.keySet()) {
             String key = doc.toString();
-            IndexWords value = doc_keys.get(doc);  
+            IndexWords value = docKeys.get(doc);  
             System.out.print("<" + key + ", ");  
             value.showHash();
             System.out.println(">");
 		} 
 	}
 	
-	// Process the links
-	private void processLink(String _link) {
-		File input = new File("./files/input/wikipedia.html");
-		BufferedWriter writerText = openFile("./files/output/fisier_text.txt");
-		BufferedWriter writerLink = openFile("./files/output/fisier_link.txt");
+	/*
+	 * Inverse Index
+	 */
+	// add word to hash
+	private void addToHash(String _text, Link _link)
+	{
+		// System.out.print("Add text: " + _text);
+		// System.out.print(" and link: " + _link.getLink());
+		
+		if(!hashLinkContains(_text)) {
+			LinksList ll = new LinksList(_link);
+			wordLinks.put(_text, ll);
+			// System.out.println(" -> Added link");
+		}
+		else {
+			// System.out.println(" -> Replaced link");
+			LinksList ll = (LinksList)wordLinks.get(_text);
+			ll.addLink(_link);
+			wordLinks.replace(_text, ll);
+		}
+	}
+	
+	// check if word exists in hash
+	private boolean hashLinkContains(String _doc)
+	{
+		return wordLinks.containsKey(_doc);
+	}
+	
+	private void showInverseIndex() {
+		int nr = 0;
+		System.out.print("< ");  
+		for (String doc: wordLinks.keySet()) {
+			nr++;
+            String key = doc.toString();
+            LinksList value = wordLinks.get(doc);
+            System.out.print(key + ": ");
+            value.show();
+            if(wordLinks.size() > nr )
+            {
+            	System.out.print(", ");
+            }            
+		}
+		System.out.println(">");
+	}
+	
+	// Process the HTML file
+	private void processHTML(String _link, String _path) {
+		String dataFile = "./files/output/data_file.txt";
+		String linksFile = "./files/output/links_file.txt";
+		File input = new File(_path);
+		BufferedWriter writerData = openFile(dataFile);
+		BufferedWriter writerLink = openFile(linksFile);
 		Document doc;
-		IndexWords ind_obj = new IndexWords();
 
 		try {
 			/*
 			 * Extract data
 			 */
-			// document title
-			//doc = Jsoup.parse(input, null, _link);
-			doc = Jsoup.connect(_link).get();
-			write_to_file(doc.title(), writerText);
+			doc = Jsoup.parse(input, null);			// get document from local file	
+			// doc = Jsoup.connect(_link).get();			// get document from web
+			writeToFile(doc.title(), writerData);
 			
 			// meta elements
 			Elements metaElements = doc.select("meta");
 			for (Element meta : metaElements) {
 				if(meta.attr("name") == "keywords" || meta.attr("name") == "description") {
-					write_to_file(meta.attr("content"), writerText);
+					writeToFile(meta.attr("content"), writerData);
 				}
 				if(meta.attr("name") == "robots") {
-					write_to_file(meta.attr("content"), writerLink);
+					writeToFile(meta.attr("content"), writerLink);
 				}
 			}
 			
@@ -215,61 +274,161 @@ public class SearchEngine {
 			Elements aElements = doc.select("a");
 			for (Element a : aElements) {
 				if(a.absUrl("href") != "") {
-					write_to_file(parse_link(a.absUrl("href")), writerLink);
-					queue_links.add(parse_link(a.absUrl("href")));
+					writeToFile(parseLink(a.absUrl("href")), writerLink);
 				}	
 			}
 			
 			// text from body
-			write_to_file(doc.body().text(), writerText);
+			writeToFile(doc.body().text(), writerData);
 			
 			/*
 			 * Process data
 			 */
 			// parse text
-			parse_text(doc.body().text(), ind_obj);
+			parseText(doc.body().text(), indexObj);
 			// add to hash
-			addToHash(_link, ind_obj);
+			addToHash(_link, indexObj);
+			
+			//showHash();
 			
 		} catch (IOException e) {
-			//e.printStackTrace();
+			System.out.println(e.getMessage());
 		}
 		
 		// close files
-		closeFile(writerText);
+		closeFile(writerData);
 		closeFile(writerLink);
 	}
 	
-	// processes the links and indexes the words
-	public void indexLinks(String _link, int _level, int _limitLinks) {
-		String link = _link;												
-		int i;
-		int limit;
+	// Process the HTML file
+	private void processTextFile(String _path) {
+		StringBuffer stringBuffer = new StringBuffer();
+		String line = null;
+		BufferedReader reader = null;	
+		indexObj = new IndexWords();
 
-		processLink(link);
+		/*
+		 * Extract data
+		 */
+		try {
+			reader = new BufferedReader(new FileReader(_path));
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}		
 		
-		for(i=1; i<=_level; i++) {
-			limit = 0;
-
-			while(!queue_links.isEmpty() && (limit < _limitLinks || _limitLinks == 0)) {
-			  String element = queue_links.poll();
-			  
-			  processLink(element);
-			  
-			  limit++;
+		try {
+			while((line = reader.readLine()) != null) {
+				stringBuffer.append(line).append("\n");
 			}
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 		
-		showHash();
+		/*
+		 * Process data
+		 */
+		// parse text
+		parseText(stringBuffer.toString(), indexObj);
+		// add to hash
+		addToHash(_path, indexObj);
+		
+		closeFile(reader);
+	}
+	
+	private String getFileExtension(File file) {
+	    String name = file.getName();
+	    int lastIndexOf = name.lastIndexOf(".");
+	    if (lastIndexOf == -1) {
+	        return ""; // empty extension
+	    }
+	    return name.substring(lastIndexOf + 1).toString();
+	}
+	
+	// processes the links and indexes the words
+	private void getFiles(String _folder_path, int max_level, int current_level) {
+		
+		if(current_level > max_level && max_level != 0) {
+			return;
+		}
+		
+		current_level++;
+		
+        File fileName = new File(_folder_path);
+        File[] fileList = fileName.listFiles();
+        
+        for (File file: fileList) {
+            if(file.isFile()) {
+            	if(getFileExtension(file).equals("txt")) {
+                	filesQueue.add(file.toString());
+            	}
+            }
+            else if(file.isDirectory()) {
+            	getFiles(file.toString(), max_level, current_level);
+            }
+            
+        }		
+	}
+
+	/*
+	 * Direct Index
+	 */
+	private void indexFiles(int _limitLinks) {
+		int limit;
+		int i;
+
+		limit = 0;
+
+		while(!filesQueue.isEmpty() && (limit < _limitLinks || _limitLinks == 0)) {
+		  String element = filesQueue.poll();
+      	
+		  processTextFile(element);
+		  
+		  limit++;
+		}
+	}
+	
+	/*
+	 * Inverse Index
+	 */
+	private void inverseIndex() {
+		for (String doc: docKeys.keySet()) {
+            String key = doc.toString();
+            IndexWords value = docKeys.get(doc);
+            
+            HashMap<String, Integer> indWords = value.getHashMap();
+            
+            for (String docW: indWords.keySet()) {
+                String keyW = docW.toString();
+                int valueW = indWords.get(docW);
+                
+                Link link = new Link(key, valueW);
+                
+                addToHash(keyW, link);
+            }
+		}
 	}
 	
 	// MAIN function
 	public static void main(String[] args) {
 		SearchEngine parser = new SearchEngine();
-		int level = 0;
-		int links = 10;
+		int level = 3;
+		int links = 5;
+		String link = "http://en.wikipedia.org/";
+		String path = "./files/input/wikipedia_org.html";
+		String directory = "F:\\Materiale_an_4_ac\\eclipseriw";
 		
-		parser.indexLinks("http://en.wikipedia.org/", level, links);
+		//parser.processHTML(link, path);
+		
+		parser.getFiles(directory, level, 0);
+		
+		parser.indexFiles(links);
+		
+		//parser.showDirectIndex();
+		
+		parser.inverseIndex();
+		
+		parser.showInverseIndex();
 	}
 
 }

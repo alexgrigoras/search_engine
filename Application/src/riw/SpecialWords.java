@@ -12,32 +12,32 @@ import java.io.IOException;
 import java.util.HashSet;
 
 public class SpecialWords {
-	private HashSet<String> s_words = null;					// hash set with words
+	private HashSet<String> sWords = null;					// hash set with words
 	private String fileName;								// file name
 	
 	// SpecialWords constructor
 	public SpecialWords(String _fileName) {
 		fileName = _fileName;
-		s_words = new HashSet<String>();		
+		sWords = new HashSet<String>();		
 		makeHashTable();
 	}
 	
 	// add word to hash
 	private void addToHash(String _text)
 	{
-		s_words.add(_text);
+		sWords.add(_text);
 	}
 	
 	// check if word exists in hash
 	public boolean hashContains(String _text)
 	{
-		return s_words.contains(_text);
+		return sWords.contains(_text);
 	}
 	
 	// show hash table
 	public void showHashTable()
 	{
-		System.out.println(s_words.toString());
+		System.out.println(sWords.toString());
 	}
 	
 	// Close an opened file
