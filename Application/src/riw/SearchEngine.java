@@ -12,9 +12,11 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Scanner;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -111,10 +113,47 @@ public class SearchEngine {
 				setFlag = false;
 			}
 			else if(Character.isLetter(str.charAt(i))) {
-					tempStr.append(str.charAt(i));
-					setFlag = true;
+				tempStr.append(str.charAt(i));
+				setFlag = true;
 			}
 		}
+	}
+	
+	private ArrayList<WordOperation> parseKeywords(String keywords) {
+		// variables for extracting words
+		int i = 0;
+		boolean setFlag = true;
+		StringBuilder tempStr = new StringBuilder("");
+		String text = "";
+		ArrayList<WordOperation> keywords_list = new ArrayList<WordOperation>();
+		WordOperation word;
+		
+		// parse text
+		for(i=0; i<keywords.length();i++) {
+			if(i == keywords.length()-1)
+			{
+				tempStr.append(keywords.charAt(i));
+			}
+			if((keywords.charAt(i) == ' ' || i == keywords.length()-1) && setFlag) {
+				text = tempStr.toString().toLowerCase();
+				word = new WordOperation(text);
+				if(exceptionsObj.hashContains(tempStr.toString().toLowerCase())) {
+					// Exception
+					keywords_list.add(word);
+				} else if(!stopwordsObj.hashContains(tempStr.toString().toLowerCase())) {
+					// Dictionary
+					keywords_list.add(word);
+				}
+				tempStr = new StringBuilder("");  
+				setFlag = false;
+			}
+			else if(Character.isLetter(keywords.charAt(i))) {
+				tempStr.append(keywords.charAt(i));
+				setFlag = true;
+			}
+		}
+		
+		return keywords_list;
 	}
 	
 	// Parse the links and remove the fragment
@@ -345,8 +384,7 @@ public class SearchEngine {
 	}
 	
 	// Searches for the files in a specified folder recursively
-	private void getFiles(String _folder_path, int max_level, int current_level) {
-		
+	private void getFiles(String _folder_path, int max_level, int current_level) {		
 		if(current_level > max_level && max_level != 0) {
 			return;
 		}
@@ -371,11 +409,11 @@ public class SearchEngine {
 
 	// Indexes the files in the queue
 	private void indexFiles(int _limitLinks) {
-		int limit;
+		int limit = 0;
 		int i;
 
-		limit = 0;
-
+		log("> Building direct index", true);
+		
 		while(!filesQueue.isEmpty() && (limit < _limitLinks || _limitLinks == 0)) {
 		  String element = filesQueue.poll();
       	
@@ -387,6 +425,8 @@ public class SearchEngine {
 	
 	// Create the inverse index from the direct indexing
 	private void inverseIndex() {
+		log("> Building inverse index", true);
+		
 		for (String doc: docKeys.keySet()) {
             String key = doc.toString();
             IndexWords value = docKeys.get(doc);
@@ -404,6 +444,28 @@ public class SearchEngine {
 		}
 	}
 	
+	private String readKeywords() {
+		System.out.println("> Search: ");
+		
+		Scanner scanner = new Scanner(System.in);
+		String keywords = scanner.nextLine();
+		
+		scanner.close();
+		
+		return keywords;
+	}
+	
+	private void searchKeywords() {
+		String keywords = readKeywords();
+		ArrayList<WordOperation> kw_list = new ArrayList<WordOperation>();
+		
+		System.out.println("> Search keywords: " + keywords);
+		
+		kw_list = parseKeywords(keywords);
+		
+		System.out.println(kw_list);
+	}
+	
 	// MAIN function
 	public static void main(String[] args) {
 		SearchEngine parser = new SearchEngine();
@@ -415,6 +477,7 @@ public class SearchEngine {
 		
 		//parser.processHTML(link, path);
 		
+		parser.log("> Getting files from folder: " + directory, true);		
 		parser.getFiles(directory, level, 0);
 		
 		parser.indexFiles(links);
@@ -423,7 +486,9 @@ public class SearchEngine {
 		
 		parser.inverseIndex();
 		
-		parser.showInverseIndex();
+		//parser.showInverseIndex();
+
+		parser.searchKeywords();
 	}
 
 }
