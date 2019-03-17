@@ -13,6 +13,12 @@ class Link
 		frequency = 1;
 	}
 	
+	public Link(Link _link)
+	{
+		link = _link.getLink();
+		frequency = _link.getFrequency();
+	}
+	
 	public Link(String _link, int _frequency)
 	{
 		link = _link;
@@ -28,7 +34,7 @@ class Link
 	}
 	
 	public void addToFrequency(int _frequency) {
-		frequency = _frequency;
+		frequency += _frequency;
 	}
 	
 	public String toString() {
@@ -70,16 +76,28 @@ public class LinksList {
 	
 	public void addLink(Link _link)
 	{
-		list_strings.add(_link);
+		list_strings.add(new Link(_link));
 	}
 	
-	public Link hasLink(String _link_name) {
+	public boolean hasLink(String _link_name) {
 		for(Link l : list_strings) {
 			if(l.verifyLink(_link_name)) {
-				return l;
+				return true;
 			}
 		}
-		return null;
+		return false;
+	}
+	
+	public void addFreqToLink(String _link_name, int frequency) {
+		for(Link l : list_strings) {
+			if(l.verifyLink(_link_name)) {
+				l.addToFrequency(frequency);
+			}
+		}
+	}
+	
+	public ArrayList<Link> getLinks() {
+		return list_strings;
 	}
 	
 	public void show() {
