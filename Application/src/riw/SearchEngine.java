@@ -126,7 +126,7 @@ public class SearchEngine {
 		StringBuilder tempStr = new StringBuilder("");
 		String text = "";
 		ArrayList<WordOperation> keywords_list = new ArrayList<WordOperation>();
-		WordOperation word;
+		WordOperation word = null;
 		
 		// parse text
 		for(i=0; i<keywords.length();i++) {
@@ -134,15 +134,38 @@ public class SearchEngine {
 			{
 				tempStr.append(keywords.charAt(i));
 			}
-			if((keywords.charAt(i) == ' ' || i == keywords.length()-1) && setFlag) {
+			if((keywords.charAt(i) == ' ' || keywords.charAt(i) == '+' || keywords.charAt(i) == '-' ||
+					i == keywords.length()-1) && setFlag) {
 				text = tempStr.toString().toLowerCase();
-				word = new WordOperation(text);
+				word = new WordOperation(text);		
 				if(exceptionsObj.hashContains(tempStr.toString().toLowerCase())) {
 					// Exception
 					keywords_list.add(word);
+					switch (keywords.charAt(i)) {
+						case ' ':
+							word.setOperation(OpType.OR);
+							break;
+						case '+':
+							word.setOperation(OpType.AND);
+							break;
+						case '-':
+							word.setOperation(OpType.NOT);
+							break;
+					}		
 				} else if(!stopwordsObj.hashContains(tempStr.toString().toLowerCase())) {
 					// Dictionary
 					keywords_list.add(word);
+					switch (keywords.charAt(i)) {
+						case ' ':
+							word.setOperation(OpType.OR);
+							break;
+						case '+':
+							word.setOperation(OpType.AND);
+							break;
+						case '-':
+							word.setOperation(OpType.NOT);
+							break;
+					}		
 				}
 				tempStr = new StringBuilder("");  
 				setFlag = false;
@@ -277,6 +300,17 @@ public class SearchEngine {
             }            
 		}
 		System.out.println(">");
+	}
+	
+	private LinksList getWordLocations(String _word) {
+		LinksList list = null;
+		if(wordLinks.containsKey(_word)) {
+			list = wordLinks.get(_word);
+			return list;
+		}
+		else {
+			return null;
+		}		
 	}
 	
 	// Process the HTML file
@@ -444,36 +478,100 @@ public class SearchEngine {
 		}
 	}
 	
-	private String readKeywords() {
-		System.out.println("> Search: ");
-		
+	private String readKeywords() {		
 		Scanner scanner = new Scanner(System.in);
-		String keywords = scanner.nextLine();
-		
-		scanner.close();
-		
+		String keywords = scanner.nextLine();		
 		return keywords;
 	}
 	
 	private void searchKeywords() {
-		String keywords = readKeywords();
-		ArrayList<WordOperation> kw_list = new ArrayList<WordOperation>();
-		
-		System.out.println("> Search keywords: " + keywords);
-		
-		kw_list = parseKeywords(keywords);
-		
-		System.out.println(kw_list);
+		boolean exit = false;
+		while(exit == false) {
+			System.out.print("> Search: ");
+			
+			String keywords = readKeywords();			
+			ArrayList<WordOperation> kw_list = new ArrayList<WordOperation>();
+			ArrayList<String> temp_list = new ArrayList<String>();
+			int list_dimension = 0;
+			LinksList words_list = new LinksList();
+			
+			if(keywords.equals("exit")) {
+				exit = true;
+				break;
+			}
+			
+			System.out.println("> Searched keywords: ");
+			
+			kw_list = parseKeywords(keywords);
+			
+			list_dimension = kw_list.size();
+			
+			if(list_dimension == 0) {
+				System.out.println("No keywords");
+			}
+			else if(list_dimension == 1) {
+				String word = kw_list.get(0).getWord();
+				
+				System.out.print(word + " -> ");
+				
+				LinksList list = getWordLocations(word);
+				list.show();
+				
+				System.out.println();
+			}
+			else {
+				for(int i = 0; i < list_dimension - 1; i++) {
+					if(kw_list.get(i).getOperation() == OpType.OR) {
+						String word_1 = kw_list.get(i).getWord();
+						String word_2 = kw_list.get(i+1).getWord();
+						System.out.print(word_1 + " OR ");
+						System.out.println(word_2 + " -> ");
+						LinksList list_1 = getWordLocations(word_1);
+						LinksList list_2 = getWordLocations(word_2);
+						
+						for(Link l: list_1.getLinks()) {
+							if(!words_list.hasLink(l.getLink())) {
+								words_list.addLink(l);
+							}
+							else {
+								words_list.addFreqToLink(l.getLink(), l.getFrequency());
+							}
+						}
+						for(Link l: list_2.getLinks()) {
+							if(!words_list.hasLink(l.getLink())) {
+								words_list.addLink(l);
+							}
+							else {
+								words_list.addFreqToLink(l.getLink(), l.getFrequency());
+							}
+						}
+						list_1.show();
+						System.out.println();
+						list_2.show();
+						System.out.println();
+						words_list.show();						
+						System.out.println();
+					}
+					else if(kw_list.get(i).getOperation() == OpType.AND) {
+						System.out.print(kw_list.get(i).getWord() + " AND ");
+						System.out.println(kw_list.get(i+1).getWord());				
+					}
+					else if(kw_list.get(i).getOperation() == OpType.NOT) {
+						System.out.println("NOT " + kw_list.get(i+1).getWord());
+					}				
+				}
+			}
+		}
 	}
 	
 	// MAIN function
 	public static void main(String[] args) {
 		SearchEngine parser = new SearchEngine();
-		int level = 3;
-		int links = 5;
+		int level = 0;
+		int links = 10;
 		String link = "http://en.wikipedia.org/";
 		String path = "./files/input/wikipedia_org.html";
-		String directory = "E:\\Facultate\\Anul 4\\Semestrul I";
+		String directory = "E:\\Facultate\\Anul IV - Facultate\\Semestrul I\\ALPD - Algoritmi paraleli si distribuiti\\Tema de casa\\test-files\\test-files";
 		
 		//parser.processHTML(link, path);
 		
