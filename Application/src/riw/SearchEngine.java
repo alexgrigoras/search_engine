@@ -494,6 +494,7 @@ public class SearchEngine {
 			ArrayList<String> temp_list = new ArrayList<String>();
 			int list_dimension = 0;
 			LinksList words_list = new LinksList();
+			StringBuilder words_ops = new StringBuilder();
 			
 			if(keywords.equals("exit")) {
 				exit = true;
@@ -516,18 +517,34 @@ public class SearchEngine {
 				
 				LinksList list = getWordLocations(word);
 				list.show();
-				
-				System.out.println();
 			}
 			else {
+				System.out.println(kw_list.toString());
 				for(int i = 0; i < list_dimension - 1; i++) {
-					if(kw_list.get(i).getOperation() == OpType.OR) {
-						String word_1 = kw_list.get(i).getWord();
-						String word_2 = kw_list.get(i+1).getWord();
-						System.out.print(word_1 + " OR ");
-						System.out.println(word_2 + " -> ");
-						LinksList list_1 = getWordLocations(word_1);
-						LinksList list_2 = getWordLocations(word_2);
+					String word_1 = kw_list.get(i).getWord();
+					String word_2 = kw_list.get(i+1).getWord();
+					OpType operation = kw_list.get(i).getOperation();
+					System.out.println(word_1 + " " + operation + " " + word_2);
+					
+					if(i == 0) {
+						words_ops.append(word_1 + " " + operation + " " + word_2);
+					}
+					else {
+						words_ops.append(" " + operation + " " + word_2);
+					}
+					
+					LinksList list_1 = null;	
+					if(words_list.size() == 0) {
+						list_1 = getWordLocations(word_1);
+					}
+					else {
+						list_1 = words_list;
+					}			
+					LinksList list_2 = getWordLocations(word_2);
+					
+					words_list = new LinksList();
+					
+					if(operation == OpType.OR) {						
 						
 						for(Link l: list_1.getLinks()) {
 							if(!words_list.hasLink(l.getLink())) {
@@ -545,22 +562,61 @@ public class SearchEngine {
 								words_list.addFreqToLink(l.getLink(), l.getFrequency());
 							}
 						}
+						/*
 						list_1.show();
 						System.out.println();
 						list_2.show();
 						System.out.println();
-						words_list.show();						
-						System.out.println();
+						*/				
 					}
-					else if(kw_list.get(i).getOperation() == OpType.AND) {
-						System.out.print(kw_list.get(i).getWord() + " AND ");
-						System.out.println(kw_list.get(i+1).getWord());				
+					else if(operation == OpType.AND) {						
+						
+						if(list_1.size() < list_2.size()) {
+							for(Link l: list_1.getLinks()) {
+								if(list_2.hasLink(l.getLink())) {
+									if(!words_list.hasLink(l.getLink())) {
+										words_list.addLink(l);
+									}
+									else {
+										words_list.addFreqToLink(l.getLink(), l.getFrequency());
+									}
+								}
+							}
+						}
+						else {
+							for(Link l: list_2.getLinks()) {
+								if(list_1.hasLink(l.getLink())) {
+									if(!words_list.hasLink(l.getLink())) {
+										words_list.addLink(l);
+									}
+									else {
+										words_list.addFreqToLink(l.getLink(), l.getFrequency());
+									}
+								}
+							}
+						}										
 					}
-					else if(kw_list.get(i).getOperation() == OpType.NOT) {
-						System.out.println("NOT " + kw_list.get(i+1).getWord());
+					else if(operation == OpType.NOT) {
+						
+						for(Link l: list_1.getLinks()) {
+							if(!list_2.hasLink(l.getLink())) {
+								if(!words_list.hasLink(l.getLink())) {
+									words_list.addLink(l);
+								}
+								else {
+									words_list.addFreqToLink(l.getLink(), l.getFrequency());
+								}
+							}
+						}
+						
 					}				
 				}
+				
+				System.out.print(words_ops + " -> ");
+				words_list.show();
 			}
+			
+			System.out.println();
 		}
 	}
 	
