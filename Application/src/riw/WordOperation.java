@@ -1,16 +1,16 @@
 package riw;
 
+enum OpType 
+{ 
+    AND,
+    OR, 
+    NOT
+}
+
 public class WordOperation {
 	private String word;
 	private OpType operation;
-	
-	public enum OpType 
-	{ 
-	    ADD,
-	    OR, 
-	    NOT
-	}
-	
+		
 	public WordOperation(String _word) {
 		word = _word;
 		operation = null;
