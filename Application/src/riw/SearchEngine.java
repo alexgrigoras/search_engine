@@ -287,19 +287,19 @@ public class SearchEngine {
 	// Display words from hash (inverse indexing)
 	private void showInverseIndex() {
 		int nr = 0;
-		System.out.print("< ");  
+		log("< ", false);  
 		for (String doc: wordLinks.keySet()) {
 			nr++;
             String key = doc.toString();
             LinksList value = wordLinks.get(doc);
-            System.out.print(key + ": ");
+            log(key + ": ", false);
             value.show();
             if(wordLinks.size() > nr )
             {
             	System.out.print(", ");
             }            
 		}
-		System.out.println(">");
+		log(">", false);
 	}
 	
 	private LinksList getWordLocations(String _word) {
@@ -487,11 +487,10 @@ public class SearchEngine {
 	private void searchKeywords() {
 		boolean exit = false;
 		while(exit == false) {
-			System.out.print("> Search: ");
+			log("> Search: ", false);
 			
 			String keywords = readKeywords();			
 			ArrayList<WordOperation> kw_list = new ArrayList<WordOperation>();
-			ArrayList<String> temp_list = new ArrayList<String>();
 			int list_dimension = 0;
 			LinksList words_list = new LinksList();
 			StringBuilder words_ops = new StringBuilder();
@@ -501,30 +500,28 @@ public class SearchEngine {
 				break;
 			}
 			
-			System.out.println("> Searched keywords: ");
+			log("> Searched keywords: ", true);
 			
 			kw_list = parseKeywords(keywords);
 			
 			list_dimension = kw_list.size();
 			
 			if(list_dimension == 0) {
-				System.out.println("No keywords");
+				log("No keywords", true);
 			}
 			else if(list_dimension == 1) {
 				String word = kw_list.get(0).getWord();
 				
-				System.out.print(word + " -> ");
+				log(word + " -> ", false);
 				
 				LinksList list = getWordLocations(word);
 				list.show();
 			}
 			else {
-				System.out.println(kw_list.toString());
 				for(int i = 0; i < list_dimension - 1; i++) {
 					String word_1 = kw_list.get(i).getWord();
 					String word_2 = kw_list.get(i+1).getWord();
-					OpType operation = kw_list.get(i).getOperation();
-					System.out.println(word_1 + " " + operation + " " + word_2);
+					OpType operation = kw_list.get(i).getOperation();					
 					
 					if(i == 0) {
 						words_ops.append(word_1 + " " + operation + " " + word_2);
@@ -561,13 +558,7 @@ public class SearchEngine {
 							else {
 								words_list.addFreqToLink(l.getLink(), l.getFrequency());
 							}
-						}
-						/*
-						list_1.show();
-						System.out.println();
-						list_2.show();
-						System.out.println();
-						*/				
+						}		
 					}
 					else if(operation == OpType.AND) {						
 						
@@ -612,11 +603,11 @@ public class SearchEngine {
 					}				
 				}
 				
-				System.out.print(words_ops + " -> ");
+				log(words_ops + " -> ", false);
 				words_list.show();
 			}
 			
-			System.out.println();
+			log("", true);
 		}
 	}
 	
