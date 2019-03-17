@@ -522,7 +522,7 @@ public class SearchEngine {
 					String word_1 = kw_list.get(i).getWord();
 					String word_2 = kw_list.get(i+1).getWord();
 					OpType operation = kw_list.get(i).getOperation();					
-					
+					System.out.println(word_1 + " " + operation + " " + word_2);
 					if(i == 0) {
 						words_ops.append(word_1 + " " + operation + " " + word_2);
 					}
@@ -531,60 +531,84 @@ public class SearchEngine {
 					}
 					
 					LinksList list_1 = null;	
+					LinksList list_2 = null;
 					if(words_list.size() == 0) {
-						list_1 = getWordLocations(word_1);
+						try {
+							list_1 = getWordLocations(word_1);
+						}
+						catch(NullPointerException e) {
+							list_1 = new LinksList();
+						}
 					}
 					else {
 						list_1 = words_list;
 					}			
-					LinksList list_2 = getWordLocations(word_2);
+					
+					try {
+						list_2 = getWordLocations(word_2);
+					}
+					catch(NullPointerException e) {
+						list_2 = new LinksList();
+					}
 					
 					words_list = new LinksList();
 					
 					if(operation == OpType.OR) {						
-						
-						for(Link l: list_1.getLinks()) {
-							if(!words_list.hasLink(l.getLink())) {
-								words_list.addLink(l);
-							}
-							else {
-								words_list.addFreqToLink(l.getLink(), l.getFrequency());
+						try {
+							for(Link l: list_1.getLinks()) {
+								if(!words_list.hasLink(l.getLink())) {
+									words_list.addLink(l);
+								}
+								else {
+									words_list.addFreqToLink(l.getLink(), l.getFrequency());
+								}
 							}
 						}
-						for(Link l: list_2.getLinks()) {
-							if(!words_list.hasLink(l.getLink())) {
-								words_list.addLink(l);
+						catch(NullPointerException e) {}
+						
+						try {
+							for(Link l: list_2.getLinks()) {
+								if(!words_list.hasLink(l.getLink())) {
+									words_list.addLink(l);
+								}
+								else {
+									words_list.addFreqToLink(l.getLink(), l.getFrequency());
+								}
 							}
-							else {
-								words_list.addFreqToLink(l.getLink(), l.getFrequency());
-							}
-						}		
+						}
+						catch(NullPointerException e) {}
 					}
 					else if(operation == OpType.AND) {						
 						
-						if(list_1.size() < list_2.size()) {
-							for(Link l: list_1.getLinks()) {
-								if(list_2.hasLink(l.getLink())) {
-									if(!words_list.hasLink(l.getLink())) {
-										words_list.addLink(l);
-									}
-									else {
-										words_list.addFreqToLink(l.getLink(), l.getFrequency());
+						if(list_1 != null && list_2 != null && list_1.size() <= list_2.size()) {
+							try {
+								for(Link l: list_1.getLinks()) {
+									if(list_2.hasLink(l.getLink())) {
+										if(!words_list.hasLink(l.getLink())) {
+											words_list.addLink(l);
+										}
+										else {
+											words_list.addFreqToLink(l.getLink(), l.getFrequency());
+										}
 									}
 								}
 							}
+							catch(NullPointerException e) {}
 						}
 						else {
-							for(Link l: list_2.getLinks()) {
-								if(list_1.hasLink(l.getLink())) {
-									if(!words_list.hasLink(l.getLink())) {
-										words_list.addLink(l);
-									}
-									else {
-										words_list.addFreqToLink(l.getLink(), l.getFrequency());
+							try {
+								for(Link l: list_2.getLinks()) {
+									if(list_1.hasLink(l.getLink())) {
+										if(!words_list.hasLink(l.getLink())) {
+											words_list.addLink(l);
+										}
+										else {
+											words_list.addFreqToLink(l.getLink(), l.getFrequency());
+										}
 									}
 								}
 							}
+							catch(NullPointerException e) {}
 						}										
 					}
 					else if(operation == OpType.NOT) {
