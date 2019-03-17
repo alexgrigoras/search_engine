@@ -112,11 +112,15 @@ public class LinksList {
             	System.out.print(", ");
             }           
         }
-        System.out.print("}");
+        System.out.print(" }");
 	}
 	
 	public static void main(String[] args) {
 
+	}
+
+	public int size() {
+		return list_strings.size();
 	}
 
 }
