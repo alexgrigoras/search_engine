@@ -418,7 +418,7 @@ public class SearchEngine {
 	}
 	
 	// Searches for the files in a specified folder recursively
-	private void getFiles(String _folder_path, int max_level, int current_level) {		
+	private void getFiles(String _folder_path, int max_level, int current_level) {
 		if(current_level > max_level && max_level != 0) {
 			return;
 		}
@@ -500,14 +500,14 @@ public class SearchEngine {
 				break;
 			}
 			
-			log("> Searched keywords: ", true);
+			log("> Searched keywords: ", false);
 			
 			kw_list = parseKeywords(keywords);
 			
 			list_dimension = kw_list.size();
 			
 			if(list_dimension == 0) {
-				log("No keywords", true);
+				log("Nothing typed!", false);
 			}
 			else if(list_dimension == 1) {
 				String word = kw_list.get(0).getWord();
@@ -521,8 +521,8 @@ public class SearchEngine {
 				for(int i = 0; i < list_dimension - 1; i++) {
 					String word_1 = kw_list.get(i).getWord();
 					String word_2 = kw_list.get(i+1).getWord();
-					OpType operation = kw_list.get(i).getOperation();					
-					//System.out.println(word_1 + " " + operation + " " + word_2);
+					OpType operation = kw_list.get(i).getOperation();
+					
 					if(i == 0) {
 						words_ops.append(word_1 + " " + operation + " " + word_2);
 					}
@@ -628,7 +628,13 @@ public class SearchEngine {
 				}
 				
 				log(words_ops + " -> ", false);
-				words_list.show();
+				
+				if(words_list.size() == 0) {
+					log("No results!", false);
+				}
+				else {
+					words_list.show();
+				}
 			}
 			
 			log("", true);
@@ -639,7 +645,7 @@ public class SearchEngine {
 	public static void main(String[] args) {
 		SearchEngine parser = new SearchEngine();
 		int level = 0;
-		int links = 10;
+		int links = 0;
 		String link = "http://en.wikipedia.org/";
 		String path = "./files/input/wikipedia_org.html";
 		String directory = "E:\\Facultate\\Anul 4\\Semestrul I\\ALPD\\Tema de casa\\test_files";
