@@ -73,7 +73,7 @@ public class SpecialWords {
 		closeFile(reader);
 	}
 	
-	// MAIN function
+	// main function
 	public static void main(String[] args) {
 		SpecialWords st_obj = new SpecialWords("stop_words.txt");
 		st_obj.showHashTable();

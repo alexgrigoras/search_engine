@@ -1,7 +1,6 @@
 package riw;
 
-enum OpType 
-{ 
+enum OpType { 
     AND,
     OR, 
     NOT

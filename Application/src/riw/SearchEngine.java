@@ -522,7 +522,7 @@ public class SearchEngine {
 					String word_1 = kw_list.get(i).getWord();
 					String word_2 = kw_list.get(i+1).getWord();
 					OpType operation = kw_list.get(i).getOperation();					
-					System.out.println(word_1 + " " + operation + " " + word_2);
+					//System.out.println(word_1 + " " + operation + " " + word_2);
 					if(i == 0) {
 						words_ops.append(word_1 + " " + operation + " " + word_2);
 					}
@@ -635,14 +635,14 @@ public class SearchEngine {
 		}
 	}
 	
-	// MAIN function
+	// main function
 	public static void main(String[] args) {
 		SearchEngine parser = new SearchEngine();
 		int level = 0;
 		int links = 10;
 		String link = "http://en.wikipedia.org/";
 		String path = "./files/input/wikipedia_org.html";
-		String directory = "E:\\Facultate\\Anul IV - Facultate\\Semestrul I\\ALPD - Algoritmi paraleli si distribuiti\\Tema de casa\\test-files\\test-files";
+		String directory = "E:\\Facultate\\Anul 4\\Semestrul I\\ALPD\\Tema de casa\\test_files";
 		
 		//parser.processHTML(link, path);
 		

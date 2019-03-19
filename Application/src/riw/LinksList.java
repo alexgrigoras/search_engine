@@ -2,8 +2,7 @@ package riw;
 
 import java.util.ArrayList;
 
-class Link
-{
+class Link {
 	private String link;
 	private int frequency;
 	
@@ -114,13 +113,8 @@ public class LinksList {
         }
         System.out.print(" }");
 	}
-	
-	public static void main(String[] args) {
-
-	}
 
 	public int size() {
 		return list_strings.size();
 	}
-
 }

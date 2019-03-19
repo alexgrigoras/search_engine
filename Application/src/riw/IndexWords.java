@@ -34,6 +34,7 @@ public class IndexWords {
 		return indWords.containsKey(_text);
 	}
 	
+	// displays the hash table
 	public void showHash() {
 		int nr = 0;
 		System.out.print("{ ");  
@@ -50,16 +51,13 @@ public class IndexWords {
 		System.out.print(" }");
 	}
 	
+	// returns the hash map
 	public HashMap<String, Integer> getHashMap() {
 		return indWords;
 	}
 	
+	// returns the size of the hash table
 	public int hashWordsNr() {
 		return indWords.size();
-	}
-	
-	// MAIN function
-	public static void main(String[] args) {
-		
 	}
 }
