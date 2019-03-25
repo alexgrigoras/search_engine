@@ -1,13 +1,16 @@
 /**
  * @title Search engine application
  * @author Alexandru Grigoras
- * @version 2.0 
+ * @version 3.0 
  */
 
 package riw;
 
 import java.util.HashMap;
 
+/**
+ * 
+ */
 public class IndexWords {
 	private HashMap<String, Integer> indWords = null;				// hash set with words
 	
@@ -59,5 +62,15 @@ public class IndexWords {
 	// returns the size of the hash table
 	public int hashWordsNr() {
 		return indWords.size();
+	}
+	
+	//daca fisierul contine cuvantul, metoda va returna frecventa de aparitie aftfel 0
+	public double getTermFrequency(String word) {
+		if (indWords.containsKey(word)) {
+			return indWords.get(word);
+		} 
+		else {
+			return 0;
+		}
 	}
 }

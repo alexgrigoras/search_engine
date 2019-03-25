@@ -1,7 +1,7 @@
 /**
  * @title Search engine application
  * @author Alexandru Grigoras
- * @version 2.0 
+ * @version 3.0 
  */
 	
 package riw;
@@ -23,19 +23,20 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+/**
+ * 
+ */
 public class SearchEngine {
-	/*
+	/**
 	 * Arguments
 	 */
 	private SpecialWords stopwordsObj;						// create hash for exceptions and stopwords
 	private SpecialWords exceptionsObj;
 	private IndexWords indexObj;
+	private HashMap<String, IndexWords> docKeys;			// indexare directa
+	private HashMap<String, LinksList> wordLinks;			// indexare inversa
 	
-	private Queue<String> filesQueue;						// queue for processing links
-	private HashMap<String, IndexWords> docKeys;	
-	private HashMap<String, LinksList> wordLinks;
-	
-	/*
+	/**
 	 * Methods
 	 */
 	// Class constructor
@@ -44,7 +45,6 @@ public class SearchEngine {
 		stopwordsObj = new SpecialWords("./files/special_words/stop_words.txt");
 		exceptionsObj = new SpecialWords("./files/special_words/exception_words.txt");
 		docKeys = new HashMap<String, IndexWords>();
-		filesQueue = new LinkedList<String>();
 		wordLinks = new HashMap<String, LinksList>();
 		indexObj = new IndexWords();
 	}
@@ -58,7 +58,6 @@ public class SearchEngine {
 			System.out.print(msg);
 		}
 	}
-	
 	private void log(int number, boolean newLine) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(number);
@@ -70,6 +69,9 @@ public class SearchEngine {
 		}
 	}
 	
+	/*
+	 * File process
+	 */
 	// Write data to a specified file
 	private void writeToFile(String str, BufferedWriter writer) 
 		throws IOException {
@@ -90,6 +92,43 @@ public class SearchEngine {
 	    }
 	}
 	
+	// Open the file from disk
+	private BufferedWriter openFile(String fileName)
+	{
+		BufferedWriter writer = null;
+		
+		eraseFile(fileName);
+		
+		try {
+			writer = new BufferedWriter(new FileWriter(fileName, true));
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		
+		return writer;
+	}
+	
+	// Close an opened file
+	private void closeFile(BufferedWriter writer)
+	{
+		try {
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	private static void closeFile(BufferedReader reader)
+	{
+		try {
+			reader.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/*
+	 * Words process
+	 */	
 	// Get words from text
 	private void parseText(String str, IndexWords indexWords) {
 		// variables for extracting words
@@ -104,10 +143,10 @@ public class SearchEngine {
 				text = tempStr.toString().toLowerCase();
 				if(exceptionsObj.hashContains(tempStr.toString().toLowerCase())) {
 					// Exception
-					indexWords.addToHash(text);			
+					indexWords.addToHash(getCanonicalForm(text));			
 				} else if(!stopwordsObj.hashContains(tempStr.toString().toLowerCase())) {
 					// Dictionary
-					indexWords.addToHash(text);
+					indexWords.addToHash(getCanonicalForm(text));
 				}
 				tempStr = new StringBuilder("");  
 				setFlag = false;
@@ -119,6 +158,7 @@ public class SearchEngine {
 		}
 	}
 	
+	// Parse the keywords from console to a format with words and associated operation
 	private ArrayList<WordOperation> parseKeywords(String keywords) {
 		// variables for extracting words
 		int i = 0;
@@ -197,40 +237,22 @@ public class SearchEngine {
 		
 		return tempStr.toString();
 	}
-	
-	// Open the file from disk
-	private BufferedWriter openFile(String fileName)
-	{
-		BufferedWriter writer = null;
-		
-		eraseFile(fileName);
-		
-		try {
-			writer = new BufferedWriter(new FileWriter(fileName, true));
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		
-		return writer;
+
+	// Read keywords from console
+	private String readKeywords() {
+		Scanner scanner = new Scanner(System.in);
+		String keywords = scanner.nextLine();		
+		return keywords;
 	}
-	
-	// Close an opened file
-	private void closeFile(BufferedWriter writer)
-	{
-		try {
-			writer.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	private static void closeFile(BufferedReader reader)
-	{
-		try {
-			reader.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		
+	/*
+	 * Porter algorithm
+	 */
+	private String getCanonicalForm(String text) {
+		PorterStemmer porterStemmer = new PorterStemmer();
+		String stem = porterStemmer.stemWord(text);
+		
+		return stem;
 	}
 	
 	/*
@@ -313,6 +335,9 @@ public class SearchEngine {
 		}		
 	}
 	
+	/*
+	 * Process files
+	 */	
 	// Process the HTML file
 	private void processHTML(String _link, String _path) {
 		String dataFile = "./files/output/data_file.txt";
@@ -406,50 +431,19 @@ public class SearchEngine {
 		
 		closeFile(reader);
 	}
-	
-	// Returns the file extension from the file name
-	private String getFileExtension(File file) {
-	    String name = file.getName();
-	    int lastIndexOf = name.lastIndexOf(".");
-	    if (lastIndexOf == -1) {
-	        return ""; 											// empty extension
-	    }
-	    return name.substring(lastIndexOf + 1).toString();
-	}
-	
-	// Searches for the files in a specified folder recursively
-	private void getFiles(String _folder_path, int max_level, int current_level) {
-		if(current_level > max_level && max_level != 0) {
-			return;
-		}
-		
-		current_level++;
-		
-        File fileName = new File(_folder_path);
-        File[] fileList = fileName.listFiles();
-        
-        for (File file: fileList) {
-            if(file.isFile()) {
-            	if(getFileExtension(file).equals("txt")) {
-                	filesQueue.add(file.toString());
-            	}
-            }
-            else if(file.isDirectory()) {
-            	getFiles(file.toString(), max_level, current_level);
-            }
-            
-        }		
-	}
 
+	/*
+	 * Indexing
+	 */
 	// Indexes the files in the queue
-	private void indexFiles(int _limitLinks) {
+	private void indexFiles(Queue<String> files, int _limitLinks) {
 		int limit = 0;
 		int i;
 
 		log("> Building direct index", true);
 		
-		while(!filesQueue.isEmpty() && (limit < _limitLinks || _limitLinks == 0)) {
-		  String element = filesQueue.poll();
+		while(!files.isEmpty() && (limit < _limitLinks || _limitLinks == 0)) {
+		  String element = files.poll();
       	
 		  processTextFile(element);
 		  
@@ -478,13 +472,11 @@ public class SearchEngine {
 		}
 	}
 	
-	private String readKeywords() {		
-		Scanner scanner = new Scanner(System.in);
-		String keywords = scanner.nextLine();		
-		return keywords;
-	}
-	
-	private void searchKeywords() {
+	/*
+	 * Search
+	 */
+	// Binary Search
+	private void binarySearch() {
 		boolean exit = false;
 		while(exit == false) {
 			log("> Search: ", false);
@@ -519,8 +511,8 @@ public class SearchEngine {
 			}
 			else {
 				for(int i = 0; i < list_dimension - 1; i++) {
-					String word_1 = kw_list.get(i).getWord();
-					String word_2 = kw_list.get(i+1).getWord();
+					String word_1 = getCanonicalForm(kw_list.get(i).getWord());
+					String word_2 = getCanonicalForm(kw_list.get(i+1).getWord());
 					OpType operation = kw_list.get(i).getOperation();
 					
 					if(i == 0) {
@@ -641,25 +633,75 @@ public class SearchEngine {
 		}
 	}
 	
+	// vectorial Search
+	private void vectorialSearch() {
+		boolean exit = false;
+		while(exit == false) {
+			log("> Search: ", false);
+			
+			String keywords = readKeywords();			
+			ArrayList<WordOperation> kw_list = new ArrayList<WordOperation>();
+			int list_dimension = 0;
+			LinksList words_list = new LinksList();
+			StringBuilder words_ops = new StringBuilder();
+			
+			if(keywords.equals("exit")) {
+				exit = true;
+				break;
+			}
+			
+			log("> Searched keywords: ", false);
+			
+			kw_list = parseKeywords(keywords);
+			
+			list_dimension = kw_list.size();
+			
+			if(list_dimension == 0) {
+				log("Nothing typed!", false);
+			}
+		}
+	}
+
+	/*
+	 * Functions for vectorial Search
+	 */
+	/*
+	 * metoda returneaza idf pentru un anumit termen.
+	 * @param term : un termen dintr-un document
+	 */
+	public double getInverseDocumentFrequency(String term) {
+		if (wordLinks.containsKey(term)) {
+			double size = wordLinks.size();
+			LinksList list = wordLinks.get(term);
+			double documentFrequency = list.size();
+			return Math.log(size / documentFrequency);
+		} else {
+			return 0;
+		}
+	}
+	
 	// main function
 	public static void main(String[] args) {
 		SearchEngine parser = new SearchEngine();
+		FileExplorer fileExp = new FileExplorer();
+		Queue<String> files;
 		int level = 0;									// how many levels to search recursively
-		int links = 0;									// limit the number of links from the queue
+		int links = 2;									// limit the number of links from the queue
 		String directory;
 		
 		//parser.processHTML(link, path);
 		
-		parser.log("> Type the selected directory: ", false);
-		
+		//parser.log("> Type the selected directory: ", false);
 		//directory = parser.readKeywords();
+		
 		directory = "E:\\Facultate\\Anul IV - Facultate\\Semestrul I\\ALPD - Algoritmi paraleli si distribuiti\\Tema de casa\\test-files\\test-files";
 		
 		parser.log("> Getting files from folder: " + directory, true);
 				
-		parser.getFiles(directory, level, 0);
+		fileExp.searchFiles(directory, level, 0);
+		files = fileExp.getFiles();
 		
-		parser.indexFiles(links);
+		parser.indexFiles(files, links);
 		
 		//parser.showDirectIndex();
 		
@@ -667,7 +709,7 @@ public class SearchEngine {
 		
 		//parser.showInverseIndex();
 
-		parser.searchKeywords();
+		//parser.binarySearch();
 	}
 
 }

@@ -1,7 +1,7 @@
 /**
  * @title Search engine application
  * @author Alexandru Grigoras
- * @version 2.0 
+ * @version 3.0 
  */
 
 package riw;
@@ -11,6 +11,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashSet;
 
+/**
+ * 
+ */
 public class SpecialWords {
 	private HashSet<String> sWords = null;					// hash set with words
 	private String fileName;								// file name
