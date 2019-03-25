@@ -644,15 +644,19 @@ public class SearchEngine {
 	// main function
 	public static void main(String[] args) {
 		SearchEngine parser = new SearchEngine();
-		int level = 0;
-		int links = 0;
-		String link = "http://en.wikipedia.org/";
-		String path = "./files/input/wikipedia_org.html";
-		String directory = "E:\\Facultate\\Anul 4\\Semestrul I\\ALPD\\Tema de casa\\test_files";
+		int level = 0;									// how many levels to search recursively
+		int links = 0;									// limit the number of links from the queue
+		String directory;
 		
 		//parser.processHTML(link, path);
 		
-		parser.log("> Getting files from folder: " + directory, true);		
+		parser.log("> Type the selected directory: ", false);
+		
+		//directory = parser.readKeywords();
+		directory = "E:\\Facultate\\Anul IV - Facultate\\Semestrul I\\ALPD - Algoritmi paraleli si distribuiti\\Tema de casa\\test-files\\test-files";
+		
+		parser.log("> Getting files from folder: " + directory, true);
+				
 		parser.getFiles(directory, level, 0);
 		
 		parser.indexFiles(links);
