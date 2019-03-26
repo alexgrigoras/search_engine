@@ -13,10 +13,15 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Scanner;
+import java.util.Map;
+import java.util.List;
+import java.util.Comparator;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -50,6 +55,7 @@ public class SearchEngine {
 		docKeys = new HashMap<String, IndexWords>();
 		wordLinks = new HashMap<String, LinksList>();
 		indexObj = new IndexWords();
+		idf = new HashMap<String, Double>();
 	}
 	
 	// Log data to console
@@ -62,6 +68,16 @@ public class SearchEngine {
 		}
 	}
 	private void log(int number, boolean newLine) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(number);
+		if(newLine) {
+			System.out.println(sb.toString());
+        }
+		else {
+			System.out.print(sb.toString());
+		}
+	}
+	private void log(double number, boolean newLine) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(number);
 		if(newLine) {
@@ -146,7 +162,7 @@ public class SearchEngine {
 				text = tempStr.toString().toLowerCase();
 				if(exceptionsObj.hashContains(tempStr.toString().toLowerCase())) {
 					// Exception
-					indexWords.addToHash(getCanonicalForm(text));			
+					indexWords.addToHash(getCanonicalForm(text));
 				} else if(!stopwordsObj.hashContains(tempStr.toString().toLowerCase())) {
 					// Dictionary
 					indexWords.addToHash(getCanonicalForm(text));
@@ -180,7 +196,7 @@ public class SearchEngine {
 			if((keywords.charAt(i) == ' ' || keywords.charAt(i) == '+' || keywords.charAt(i) == '-' ||
 					i == keywords.length()-1) && setFlag) {
 				text = tempStr.toString().toLowerCase();
-				word = new WordOperation(text);		
+				word = new WordOperation(getCanonicalForm(text));
 				if(exceptionsObj.hashContains(tempStr.toString().toLowerCase())) {
 					// Exception
 					keywords_list.add(word);
@@ -277,12 +293,13 @@ public class SearchEngine {
 	
 	// Display words from hash (direct indexing)
 	private void showDirectIndex() {
+		log("> Showing direct index: ", false);
 		for (String doc: docKeys.keySet()) {
             String key = doc.toString();
             IndexWords value = docKeys.get(doc);  
-            System.out.print("<" + key + ", ");  
+            log("<" + key + ", ", false);  
             value.showHash();
-            System.out.println(">");
+            log(">", true);
 		} 
 	}
 	
@@ -312,6 +329,8 @@ public class SearchEngine {
 	// Display words from hash (inverse indexing)
 	private void showInverseIndex() {
 		int nr = 0;
+		
+		log("> Showing inverse index: ", false);
 		log("< ", false);  
 		for (String doc: wordLinks.keySet()) {
 			nr++;
@@ -321,7 +340,7 @@ public class SearchEngine {
             value.show();
             if(wordLinks.size() > nr )
             {
-            	System.out.print(", ");
+            	log(", ", false);
             }            
 		}
 		log(">", false);
@@ -391,7 +410,7 @@ public class SearchEngine {
 			//showHash();
 			
 		} catch (IOException e) {
-			System.out.println(e.getMessage());
+			log(e.getMessage(), true);
 		}
 		
 		// close files
@@ -514,8 +533,8 @@ public class SearchEngine {
 			}
 			else {
 				for(int i = 0; i < list_dimension - 1; i++) {
-					String word_1 = getCanonicalForm(kw_list.get(i).getWord());
-					String word_2 = getCanonicalForm(kw_list.get(i+1).getWord());
+					String word_1 = kw_list.get(i).getWord();
+					String word_2 = kw_list.get(i+1).getWord();
 					OpType operation = kw_list.get(i).getOperation();
 					
 					if(i == 0) {
@@ -663,7 +682,7 @@ public class SearchEngine {
 		}
 	}
 	
-	// returns
+	// Returns a vector with tf*idf for searched words
 	private ArrayList<Double> calculateQueryVector(ArrayList<WordOperation> words_list) {
 		int nrQueryWords = words_list.size();
 		ArrayList<Double> vector = new ArrayList<Double>();
@@ -671,7 +690,7 @@ public class SearchEngine {
 		int nrDocuments = docKeys.size();
 		
 		for(WordOperation word: words_list) {
-			double tf = 1.0 / nrQueryWords;
+			double tf = 1.0 / (double)nrQueryWords;
 			double idf;
 			LinksList listDocs = getWordLocations(word.getWord());
 			double nrWordDocs = 1;
@@ -690,7 +709,7 @@ public class SearchEngine {
 		return vector;
 	}
 	
-	// vectorial Search
+	// Vectorial Search
 	private void vectorialSearch() {
 		boolean exit = false;
 		while(exit == false) {
@@ -698,13 +717,13 @@ public class SearchEngine {
 			
 			//String keywords = readKeywords();			
 		
-			String keywords = "ana has apples and fears";
+			String keywords = "anna  has apples and fears";
 			log(keywords, true);
 			exit = true;
 			
 			ArrayList<WordOperation> kw_list = new ArrayList<WordOperation>();
 			int list_dimension = 0;
-			LinksList words_list = new LinksList();
+			LinksList docs_list = new LinksList();
 			StringBuilder words_ops = new StringBuilder();
 			
 			if(keywords.equals("exit")) {
@@ -718,9 +737,7 @@ public class SearchEngine {
 			ArrayList<Double> vector = new ArrayList<Double>();
 			vector = calculateQueryVector(kw_list);
 			
-			log(vector.toString(), true);
-			
-			log("> Searched keywords: ", false);			
+			log("> ", false);			
 			
 			if(list_dimension == 0) {
 				log("Nothing typed!", false);
@@ -728,10 +745,23 @@ public class SearchEngine {
 			else if(list_dimension == 1) {
 				String word = kw_list.get(0).getWord();
 				
-				log(word + " -> ", false);
-				
+				log(word + " has ", false);
 				LinksList list = getWordLocations(word);
-				list.show();
+				log(list.size(), false);
+				log(" results: ", true);				
+				
+				HashMap<String, Double> cosSimVal = new HashMap<String, Double>(); 
+				
+				double idf = getInverseDocumentFrequency(word);
+				for(Link l: list.getLinks()) {
+					String link = l.getLink();
+					if(hashContains(link)) {
+						double tf = docKeys.get(link).getTfOfWord(word);
+						cosSimVal.put(link, cosineSimilarity(vector.get(0), tf*idf));
+					}
+				}				
+				
+				showResults(cosSimVal);
 			}
 			else {
 				for(int i = 0; i < list_dimension - 1; i++) {
@@ -748,7 +778,7 @@ public class SearchEngine {
 					
 					LinksList list_1 = null;	
 					LinksList list_2 = null;
-					if(words_list.size() == 0) {
+					if(docs_list.size() == 0) {
 						try {
 							list_1 = getWordLocations(word_1);
 						}
@@ -757,7 +787,7 @@ public class SearchEngine {
 						}
 					}
 					else {
-						list_1 = words_list;
+						list_1 = docs_list;
 					}			
 					
 					try {
@@ -767,17 +797,17 @@ public class SearchEngine {
 						list_2 = new LinksList();
 					}
 					
-					words_list = new LinksList();
+					docs_list = new LinksList();
 					
 					if(operation == OpType.OR) {						
 						if(list_1 != null && list_2 != null && list_1.size() >= list_2.size()) {
 							try {
 								for(Link l: list_1.getLinks()) {
-									if(!words_list.hasLink(l.getLink())) {
-										words_list.addLink(l);
+									if(!docs_list.hasLink(l.getLink())) {
+										docs_list.addLink(l);
 									}
 									else {
-										words_list.addFreqToLink(l.getLink(), l.getFrequency());
+										docs_list.addFreqToLink(l.getLink(), l.getFrequency());
 									}
 								}
 							}
@@ -785,11 +815,11 @@ public class SearchEngine {
 							
 							try {
 								for(Link l: list_2.getLinks()) {
-									if(!words_list.hasLink(l.getLink())) {
-										words_list.addLink(l);
+									if(!docs_list.hasLink(l.getLink())) {
+										docs_list.addLink(l);
 									}
 									else {
-										words_list.addFreqToLink(l.getLink(), l.getFrequency());
+										docs_list.addFreqToLink(l.getLink(), l.getFrequency());
 									}
 								}
 							}
@@ -798,11 +828,11 @@ public class SearchEngine {
 						else {
 							try {
 								for(Link l: list_2.getLinks()) {
-									if(!words_list.hasLink(l.getLink())) {
-										words_list.addLink(l);
+									if(!docs_list.hasLink(l.getLink())) {
+										docs_list.addLink(l);
 									}
 									else {
-										words_list.addFreqToLink(l.getLink(), l.getFrequency());
+										docs_list.addFreqToLink(l.getLink(), l.getFrequency());
 									}
 								}
 							}
@@ -810,11 +840,11 @@ public class SearchEngine {
 							
 							try {
 								for(Link l: list_1.getLinks()) {
-									if(!words_list.hasLink(l.getLink())) {
-										words_list.addLink(l);
+									if(!docs_list.hasLink(l.getLink())) {
+										docs_list.addLink(l);
 									}
 									else {
-										words_list.addFreqToLink(l.getLink(), l.getFrequency());
+										docs_list.addFreqToLink(l.getLink(), l.getFrequency());
 									}
 								}
 							}
@@ -825,11 +855,11 @@ public class SearchEngine {
 						
 						for(Link l: list_1.getLinks()) {
 							if(!list_2.hasLink(l.getLink())) {
-								if(!words_list.hasLink(l.getLink())) {
-									words_list.addLink(l);
+								if(!docs_list.hasLink(l.getLink())) {
+									docs_list.addLink(l);
 								}
 								else {
-									words_list.addFreqToLink(l.getLink(), l.getFrequency());
+									docs_list.addFreqToLink(l.getLink(), l.getFrequency());
 								}
 							}
 						}
@@ -837,17 +867,38 @@ public class SearchEngine {
 					}				
 				}
 				
-				log(words_ops + " -> ", false);
+				log(words_ops + " has ", false);
+				log(docs_list.size(), false);
+				log(" results: ", true);
 				
-				if(words_list.size() == 0) {
-					log("No results!", false);
+				HashMap<String, Double> cosSimVal = new HashMap<String, Double>(); 
+				
+				ArrayList<Double> link_vectors = new ArrayList<Double>();
+				
+				for(WordOperation w: kw_list) {
+					double idf = getInverseDocumentFrequency(w.getWord());
+					for(Link l: docs_list.getLinks()) {
+						String link = l.getLink();
+						if(hashContains(link)) {
+							double tf = docKeys.get(link).getTfOfWord(w.getWord());
+							link_vectors.add(tf*idf);
+						}
+					}				
 				}
-				else {
-					words_list.show();
+				
+				for(int i=0;i<docs_list.size();i++)
+				{
+					ArrayList<Double> cosVector = new ArrayList<Double>();
+					for(int j=0; j<kw_list.size(); j++)
+					{
+						cosVector.add(link_vectors.get(i+j*docs_list.size()));
+					}
+					
+					cosSimVal.put(docs_list.getLinks().get(i).getLink(), cosineSimilarity(vector, cosVector));
 				}
+				
+				showResults(cosSimVal);
 			}
-			
-			log("", true);
 		}
 	}
 
@@ -856,17 +907,58 @@ public class SearchEngine {
 	 */
 	
 	// calculate tf for documents
-	// Display words from hash (direct indexing)
 	private void calculateTfForDocs() {
 		for (String doc: docKeys.keySet()) {
             String key = doc.toString();
             IndexWords value = docKeys.get(doc);  
-            System.out.print("<" + key + ", ");
             value.calculateTf();
-            value.showTf();
-            System.out.println(">");
 		} 
 	}
+	
+	// show tf for documents
+	private void showTfForDocs() {
+		log("> Showing tf for documents: ", false);
+		for (String doc: docKeys.keySet()) {
+            String key = doc.toString();
+            IndexWords value = docKeys.get(doc);  
+            log("< " + key + ", ", false);
+            value.showTf();
+            log(" >", true);
+		} 
+	}	
+	
+	// show the hash map containing the search results
+	private void showResults(HashMap<String, Double> hash_map) {
+		Map<String, Double> hm = sortByValue(hash_map); 
+		  
+        // print the sorted hashmap 
+        for (Map.Entry<String, Double> en : hm.entrySet()) { 
+            log(" - Document: " + en.getKey() + " [" + en.getValue() + "]", true); 
+        } 
+	}
+	
+	// print to console sorted results
+	private static HashMap<String, Double> sortByValue(HashMap<String,Double> hm) 
+    { 
+        // Create a list from elements of HashMap 
+        List<Map.Entry<String, Double>> list = new LinkedList<Map.Entry<String, Double> >(hm.entrySet()); 
+  
+        // Sort the list 
+        Collections.sort(list, new Comparator<Map.Entry<String, Double> >() { 
+            public int compare(Map.Entry<String, Double> o1,  
+                               Map.Entry<String, Double> o2) 
+            { 
+                return -(o1.getValue()).compareTo(o2.getValue()); 
+            } 
+        }); 
+          
+        // put data from sorted list to hashmap  
+        HashMap<String, Double> temp = new LinkedHashMap<String, Double>(); 
+        for (Map.Entry<String, Double> aa : list) { 
+            temp.put(aa.getKey(), aa.getValue()); 
+        } 
+        return temp; 
+    } 
 	
 	/*
 	 * metoda returneaza idf pentru un anumit termen.
@@ -877,11 +969,78 @@ public class SearchEngine {
 			double size = wordLinks.size();
 			LinksList list = wordLinks.get(term);
 			double documentFrequency = list.size();
-			return Math.log(size / documentFrequency);
+			return Math.log(size / (1 + documentFrequency));
 		} else {
 			return 0;
 		}
 	}
+	
+	public void calculateIdf() {
+		for (String doc: wordLinks.keySet()) {
+            String key = doc.toString();
+            double idf_val;
+            try {
+            	idf_val = getInverseDocumentFrequency(key);
+            }
+            catch(NullPointerException ex) {
+            	idf_val = 0;
+            }
+            
+            idf.put(key, idf_val);
+		}
+	}
+	
+	public void showIdfForTerms() {
+		int nr = 0;
+		
+		log("> Showing idf for documents: ", false);
+		log("< ", false);  
+		for (String doc: idf.keySet()) {
+			nr++;
+            String key = doc.toString();
+            Double value = idf.get(doc);
+            log(key + ": " + value, false);
+            if(idf.size() > nr )
+            {
+            	log(", ", false);
+            }            
+		}
+		log(">", true);
+	}
+	
+	public double cosineSimilarity(double A, double B) {
+    	double sumProduct = 0;
+    	double sumASq = 0;
+    	double sumBSq = 0;
+    	
+    	sumProduct += A * B;
+    	sumASq += A * A;
+    	sumBSq += B * B;
+    	
+    	if (sumASq == 0 && sumBSq == 0) {
+    		return 2.0;
+    	}
+    	return sumProduct / (Math.sqrt(sumASq) * Math.sqrt(sumBSq));
+    }
+	
+	public double cosineSimilarity(ArrayList<Double> A, ArrayList<Double> B) {
+    	if (A == null || B == null || A.size() == 0 || B.size() == 0 || A.size() != B.size()) {
+    		return 2;
+    	}
+
+    	double sumProduct = 0;
+    	double sumASq = 0;
+    	double sumBSq = 0;
+    	for (int i = 0; i < A.size(); i++) {
+    		sumProduct += A.get(i) * B.get(i);
+    		sumASq += A.get(i) * A.get(i);
+    		sumBSq += B.get(i) * B.get(i);
+    	}
+    	if (sumASq == 0 && sumBSq == 0) {
+    		return 2.0;
+    	}
+    	return sumProduct / (Math.sqrt(sumASq) * Math.sqrt(sumBSq));
+    }
 	
 	// main function
 	public static void main(String[] args) {
@@ -897,7 +1056,8 @@ public class SearchEngine {
 		//parser.log("> Type the selected directory: ", false);
 		//directory = parser.readKeywords();
 		
-		directory = "D:\\Facultate\\Anul 4\\Semestrul I\\ALPD\\Tema de casa\\test_files";
+		//directory = "D:\\Facultate\\Anul 4\\Semestrul I\\ALPD\\Tema de casa\\test_files";
+		directory = "E:\\Facultate\\Anul IV - Facultate\\Semestrul I\\ALPD - Algoritmi paraleli si distribuiti\\Tema de casa\\test-files\\test-files";
 		
 		parser.log("> Getting files from folder: " + directory, true);
 				
@@ -905,15 +1065,17 @@ public class SearchEngine {
 		files = fileExp.getFiles();
 		
 		parser.indexFiles(files, links);
-		
 		//parser.showDirectIndex();
 		
 		parser.calculateTfForDocs();
+		//parser.showTfForDocs();
 		
 		parser.inverseIndex();
-		
 		//parser.showInverseIndex();
-
+		
+		parser.calculateIdf();
+		//parser.showIdfForTerms();
+		
 		//parser.binarySearch();
 		
 		parser.vectorialSearch();
