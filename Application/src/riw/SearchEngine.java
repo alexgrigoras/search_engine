@@ -33,13 +33,16 @@ public class SearchEngine {
 	private SpecialWords stopwordsObj;						// create hash for exceptions and stopwords
 	private SpecialWords exceptionsObj;
 	private IndexWords indexObj;
-	private HashMap<String, IndexWords> docKeys;			// indexare directa
-	private HashMap<String, LinksList> wordLinks;			// indexare inversa
+	private HashMap<String, IndexWords> docKeys;			// indexare directa + tf
+	private HashMap<String, LinksList> wordLinks;			// indexare inversa	
+	
+	private HashMap<String, Double> idf;					// indexare inversa	
 	
 	/**
 	 * Methods
 	 */
 	// Class constructor
+
 	public SearchEngine()
 	{
 		stopwordsObj = new SpecialWords("./files/special_words/stop_words.txt");
@@ -545,30 +548,57 @@ public class SearchEngine {
 					
 					words_list = new LinksList();
 					
-					if(operation == OpType.OR) {						
-						try {
-							for(Link l: list_1.getLinks()) {
-								if(!words_list.hasLink(l.getLink())) {
-									words_list.addLink(l);
-								}
-								else {
-									words_list.addFreqToLink(l.getLink(), l.getFrequency());
-								}
-							}
-						}
-						catch(NullPointerException e) {}
-						
-						try {
-							for(Link l: list_2.getLinks()) {
-								if(!words_list.hasLink(l.getLink())) {
-									words_list.addLink(l);
-								}
-								else {
-									words_list.addFreqToLink(l.getLink(), l.getFrequency());
+					if(operation == OpType.OR) {
+						if(list_1 != null && list_2 != null && list_1.size() >= list_2.size()) {
+							try {
+								for(Link l: list_1.getLinks()) {
+									if(!words_list.hasLink(l.getLink())) {
+										words_list.addLink(l);
+									}
+									else {
+										words_list.addFreqToLink(l.getLink(), l.getFrequency());
+									}
 								}
 							}
+							catch(NullPointerException e) {}
+							
+							try {
+								for(Link l: list_2.getLinks()) {
+									if(!words_list.hasLink(l.getLink())) {
+										words_list.addLink(l);
+									}
+									else {
+										words_list.addFreqToLink(l.getLink(), l.getFrequency());
+									}
+								}
+							}
+							catch(NullPointerException e) {}
 						}
-						catch(NullPointerException e) {}
+						else {
+							try {
+								for(Link l: list_2.getLinks()) {
+									if(!words_list.hasLink(l.getLink())) {
+										words_list.addLink(l);
+									}
+									else {
+										words_list.addFreqToLink(l.getLink(), l.getFrequency());
+									}
+								}
+							}
+							catch(NullPointerException e) {}
+							
+							try {
+								for(Link l: list_1.getLinks()) {
+									if(!words_list.hasLink(l.getLink())) {
+										words_list.addLink(l);
+									}
+									else {
+										words_list.addFreqToLink(l.getLink(), l.getFrequency());
+									}
+								}
+							}
+							catch(NullPointerException e) {}
+						}
 					}
 					else if(operation == OpType.AND) {						
 						
@@ -633,13 +663,45 @@ public class SearchEngine {
 		}
 	}
 	
+	// returns
+	private ArrayList<Double> calculateQueryVector(ArrayList<WordOperation> words_list) {
+		int nrQueryWords = words_list.size();
+		ArrayList<Double> vector = new ArrayList<Double>();
+		
+		int nrDocuments = docKeys.size();
+		
+		for(WordOperation word: words_list) {
+			double tf = 1.0 / nrQueryWords;
+			double idf;
+			LinksList listDocs = getWordLocations(word.getWord());
+			double nrWordDocs = 1;
+			try {
+				nrWordDocs += listDocs.size();
+			}
+			catch(NullPointerException ex){}
+			
+			double res = nrDocuments / nrWordDocs;
+			
+			idf = Math.log(res);
+			
+			vector.add(tf*idf);
+		}
+		
+		return vector;
+	}
+	
 	// vectorial Search
 	private void vectorialSearch() {
 		boolean exit = false;
 		while(exit == false) {
 			log("> Search: ", false);
 			
-			String keywords = readKeywords();			
+			//String keywords = readKeywords();			
+		
+			String keywords = "ana has apples and fears";
+			log(keywords, true);
+			exit = true;
+			
 			ArrayList<WordOperation> kw_list = new ArrayList<WordOperation>();
 			int list_dimension = 0;
 			LinksList words_list = new LinksList();
@@ -650,21 +712,162 @@ public class SearchEngine {
 				break;
 			}
 			
-			log("> Searched keywords: ", false);
-			
 			kw_list = parseKeywords(keywords);
-			
 			list_dimension = kw_list.size();
+			
+			ArrayList<Double> vector = new ArrayList<Double>();
+			vector = calculateQueryVector(kw_list);
+			
+			log(vector.toString(), true);
+			
+			log("> Searched keywords: ", false);			
 			
 			if(list_dimension == 0) {
 				log("Nothing typed!", false);
 			}
+			else if(list_dimension == 1) {
+				String word = kw_list.get(0).getWord();
+				
+				log(word + " -> ", false);
+				
+				LinksList list = getWordLocations(word);
+				list.show();
+			}
+			else {
+				for(int i = 0; i < list_dimension - 1; i++) {
+					String word_1 = getCanonicalForm(kw_list.get(i).getWord());
+					String word_2 = getCanonicalForm(kw_list.get(i+1).getWord());
+					OpType operation = kw_list.get(i).getOperation();
+					
+					if(i == 0) {
+						words_ops.append(word_1 + " " + operation + " " + word_2);
+					}
+					else {
+						words_ops.append(" " + operation + " " + word_2);
+					}
+					
+					LinksList list_1 = null;	
+					LinksList list_2 = null;
+					if(words_list.size() == 0) {
+						try {
+							list_1 = getWordLocations(word_1);
+						}
+						catch(NullPointerException e) {
+							list_1 = new LinksList();
+						}
+					}
+					else {
+						list_1 = words_list;
+					}			
+					
+					try {
+						list_2 = getWordLocations(word_2);
+					}
+					catch(NullPointerException e) {
+						list_2 = new LinksList();
+					}
+					
+					words_list = new LinksList();
+					
+					if(operation == OpType.OR) {						
+						if(list_1 != null && list_2 != null && list_1.size() >= list_2.size()) {
+							try {
+								for(Link l: list_1.getLinks()) {
+									if(!words_list.hasLink(l.getLink())) {
+										words_list.addLink(l);
+									}
+									else {
+										words_list.addFreqToLink(l.getLink(), l.getFrequency());
+									}
+								}
+							}
+							catch(NullPointerException e) {}
+							
+							try {
+								for(Link l: list_2.getLinks()) {
+									if(!words_list.hasLink(l.getLink())) {
+										words_list.addLink(l);
+									}
+									else {
+										words_list.addFreqToLink(l.getLink(), l.getFrequency());
+									}
+								}
+							}
+							catch(NullPointerException e) {}
+						}
+						else {
+							try {
+								for(Link l: list_2.getLinks()) {
+									if(!words_list.hasLink(l.getLink())) {
+										words_list.addLink(l);
+									}
+									else {
+										words_list.addFreqToLink(l.getLink(), l.getFrequency());
+									}
+								}
+							}
+							catch(NullPointerException e) {}
+							
+							try {
+								for(Link l: list_1.getLinks()) {
+									if(!words_list.hasLink(l.getLink())) {
+										words_list.addLink(l);
+									}
+									else {
+										words_list.addFreqToLink(l.getLink(), l.getFrequency());
+									}
+								}
+							}
+							catch(NullPointerException e) {}
+						}
+					}
+					else if(operation == OpType.NOT) {
+						
+						for(Link l: list_1.getLinks()) {
+							if(!list_2.hasLink(l.getLink())) {
+								if(!words_list.hasLink(l.getLink())) {
+									words_list.addLink(l);
+								}
+								else {
+									words_list.addFreqToLink(l.getLink(), l.getFrequency());
+								}
+							}
+						}
+						
+					}				
+				}
+				
+				log(words_ops + " -> ", false);
+				
+				if(words_list.size() == 0) {
+					log("No results!", false);
+				}
+				else {
+					words_list.show();
+				}
+			}
+			
+			log("", true);
 		}
 	}
 
 	/*
 	 * Functions for vectorial Search
 	 */
+	
+	// calculate tf for documents
+	// Display words from hash (direct indexing)
+	private void calculateTfForDocs() {
+		for (String doc: docKeys.keySet()) {
+            String key = doc.toString();
+            IndexWords value = docKeys.get(doc);  
+            System.out.print("<" + key + ", ");
+            value.calculateTf();
+            value.showTf();
+            System.out.println(">");
+		} 
+	}
+	
 	/*
 	 * metoda returneaza idf pentru un anumit termen.
 	 * @param term : un termen dintr-un document
@@ -686,7 +889,7 @@ public class SearchEngine {
 		FileExplorer fileExp = new FileExplorer();
 		Queue<String> files;
 		int level = 0;									// how many levels to search recursively
-		int links = 2;									// limit the number of links from the queue
+		int links = 0;									// limit the number of links from the queue
 		String directory;
 		
 		//parser.processHTML(link, path);
@@ -694,7 +897,7 @@ public class SearchEngine {
 		//parser.log("> Type the selected directory: ", false);
 		//directory = parser.readKeywords();
 		
-		directory = "E:\\Facultate\\Anul IV - Facultate\\Semestrul I\\ALPD - Algoritmi paraleli si distribuiti\\Tema de casa\\test-files\\test-files";
+		directory = "D:\\Facultate\\Anul 4\\Semestrul I\\ALPD\\Tema de casa\\test_files";
 		
 		parser.log("> Getting files from folder: " + directory, true);
 				
@@ -705,11 +908,15 @@ public class SearchEngine {
 		
 		//parser.showDirectIndex();
 		
+		parser.calculateTfForDocs();
+		
 		parser.inverseIndex();
 		
 		//parser.showInverseIndex();
 
 		//parser.binarySearch();
+		
+		parser.vectorialSearch();
 	}
 
 }
