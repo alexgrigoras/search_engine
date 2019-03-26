@@ -13,9 +13,11 @@ import java.util.HashMap;
  */
 public class IndexWords {
 	private HashMap<String, Integer> indWords = null;				// hash set with words
+	private HashMap<String, Double> tf = null;
 	
 	public IndexWords() {
 	    indWords = new HashMap<String, Integer>();
+	    tf = new HashMap<String, Double>();
 	}	
 	
 	// add word to hash
@@ -54,23 +56,40 @@ public class IndexWords {
 		System.out.print(" }");
 	}
 	
+	// displays the hash table
+	public void showTf() {
+		int nr = 0;
+		System.out.print("{ ");  
+		for (String word: tf.keySet()) {
+			nr++;
+            String key = word.toString();
+            Double value = tf.get(word);  
+            System.out.print(key + ": " + value);  
+            if(tf.size() > nr )
+            {
+            	System.out.print(", ");
+            }
+		} 
+		System.out.print(" }");
+	}
+	
+	// displays the hash table
+	public void calculateTf() {
+		for (String word: indWords.keySet()) {
+            String key = word.toString();
+            int value = indWords.get(word);  
+            tf.put(key, 1.0 / getNrWords());
+		} 
+	}
+	
 	// returns the hash map
 	public HashMap<String, Integer> getHashMap() {
 		return indWords;
 	}
 	
 	// returns the size of the hash table
-	public int hashWordsNr() {
+	public int getNrWords() {
 		return indWords.size();
 	}
-	
-	//daca fisierul contine cuvantul, metoda va returna frecventa de aparitie aftfel 0
-	public double getTermFrequency(String word) {
-		if (indWords.containsKey(word)) {
-			return indWords.get(word);
-		} 
-		else {
-			return 0;
-		}
-	}
+
 }
