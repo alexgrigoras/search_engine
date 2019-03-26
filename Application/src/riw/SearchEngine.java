@@ -715,11 +715,7 @@ public class SearchEngine {
 		while(exit == false) {
 			log("> Search: ", false);
 			
-			//String keywords = readKeywords();			
-		
-			String keywords = "anna  has apples and fears";
-			log(keywords, true);
-			exit = true;
+			String keywords = readKeywords();
 			
 			ArrayList<WordOperation> kw_list = new ArrayList<WordOperation>();
 			int list_dimension = 0;
