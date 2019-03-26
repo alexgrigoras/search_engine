@@ -39,6 +39,7 @@ public class IndexWords {
 		return indWords.containsKey(_text);
 	}
 	
+	
 	// displays the hash table
 	public void showHash() {
 		int nr = 0;
@@ -77,9 +78,19 @@ public class IndexWords {
 	public void calculateTf() {
 		for (String word: indWords.keySet()) {
             String key = word.toString();
-            int value = indWords.get(word);  
+            //int value = indWords.get(word);
+            
             tf.put(key, 1.0 / getNrWords());
 		} 
+	}
+	
+	public double getTfOfWord(String word) {
+		if(hashContains(word)) {
+			return tf.get(word); 
+		}
+		else {
+			return 0;
+		}
 	}
 	
 	// returns the hash map
