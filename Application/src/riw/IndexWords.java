@@ -78,9 +78,9 @@ public class IndexWords {
 	public void calculateTf() {
 		for (String word: indWords.keySet()) {
             String key = word.toString();
-            //int value = indWords.get(word);
+            int value = indWords.get(word);
             
-            tf.put(key, 1.0 / getNrWords());
+            tf.put(key, (double) (value) / (double)getNrWords());
 		} 
 	}
 	
