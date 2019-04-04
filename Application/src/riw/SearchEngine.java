@@ -1014,14 +1014,14 @@ public class SearchEngine {
     	sumBSq += B * B;
     	
     	if (sumASq == 0 && sumBSq == 0) {
-    		return 2.0;
+    		return 0;
     	}
     	return sumProduct / (Math.sqrt(sumASq) * Math.sqrt(sumBSq));
     }
 	
 	public double cosineSimilarity(ArrayList<Double> A, ArrayList<Double> B) {
     	if (A == null || B == null || A.size() == 0 || B.size() == 0 || A.size() != B.size()) {
-    		return 2;
+    		return 0;
     	}
 
     	double sumProduct = 0;
@@ -1033,7 +1033,7 @@ public class SearchEngine {
     		sumBSq += B.get(i) * B.get(i);
     	}
     	if (sumASq == 0 && sumBSq == 0) {
-    		return 2.0;
+    		return 0;
     	}
     	return sumProduct / (Math.sqrt(sumASq) * Math.sqrt(sumBSq));
     }
@@ -1052,8 +1052,8 @@ public class SearchEngine {
 		//parser.log("> Type the selected directory: ", false);
 		//directory = parser.readKeywords();
 		
-		directory = "D:\\Facultate\\Anul 4\\Semestrul I\\ALPD\\Tema de casa\\test_files";
-		//directory = "E:\\Facultate\\Anul IV - Facultate\\Semestrul I\\ALPD - Algoritmi paraleli si distribuiti\\Tema de casa\\test-files\\test-files";
+		//directory = "D:\\Facultate\\Anul 4\\Semestrul I\\ALPD\\Tema de casa\\test_files";
+		directory = "E:\\Facultate\\Anul IV - Facultate\\Semestrul I\\ALPD - Algoritmi paraleli si distribuiti\\Tema de casa\\test-files\\test-files";
 		
 		parser.log("> Getting files from folder: " + directory, true);
 				
