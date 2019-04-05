@@ -27,35 +27,23 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 /**
  * 
  */
 public class SearchEngine {
-	/**
-	 * Arguments
-	 */
 	private SpecialWords stopwordsObj;						// create hash for exceptions and stopwords
 	private SpecialWords exceptionsObj;
-	private IndexWords indexObj;
-	private HashMap<String, IndexWords> docKeys;			// indexare directa + tf
-	private HashMap<String, LinksList> wordLinks;			// indexare inversa	
-	
-	private HashMap<String, Double> idf;					// indexare inversa	
 	
 	/**
 	 * Methods
 	 */
 	// Class constructor
-
-	public SearchEngine()
-	{
+	public SearchEngine() {
 		stopwordsObj = new SpecialWords("./files/special_words/stop_words.txt");
 		exceptionsObj = new SpecialWords("./files/special_words/exception_words.txt");
-		docKeys = new HashMap<String, IndexWords>();
-		wordLinks = new HashMap<String, LinksList>();
-		indexObj = new IndexWords();
-		idf = new HashMap<String, Double>();
 	}
 	
 	// Log data to console
@@ -87,94 +75,13 @@ public class SearchEngine {
 			System.out.print(sb.toString());
 		}
 	}
-	
-	/*
-	 * File process
-	 */
-	// Write data to a specified file
-	private void writeToFile(String str, BufferedWriter writer) 
-		throws IOException {
-	    	writer.append(str);
-	    	writer.append("\n");
-	}
-	
-	// Erase content from a file
-	private void eraseFile(String str) {
-	  	File f = new File(str);
-	    if(f.exists()){
-	    	f.delete();
-	    	try {
-	    		f.createNewFile();
-	    	} catch (IOException e) {
-	    		e.printStackTrace();
-	    	}
-	    }
-	}
-	
-	// Open the file from disk
-	private BufferedWriter openFile(String fileName)
-	{
-		BufferedWriter writer = null;
+
+	// Porter algorithm
+	private String getCanonicalForm(String text) {
+		PorterStemmer porterStemmer = new PorterStemmer();
+		String stem = porterStemmer.stemWord(text);
 		
-		eraseFile(fileName);
-		
-		try {
-			writer = new BufferedWriter(new FileWriter(fileName, true));
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		
-		return writer;
-	}
-	
-	// Close an opened file
-	private void closeFile(BufferedWriter writer)
-	{
-		try {
-			writer.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	private static void closeFile(BufferedReader reader)
-	{
-		try {
-			reader.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	/*
-	 * Words process
-	 */	
-	// Get words from text
-	private void parseText(String str, IndexWords indexWords) {
-		// variables for extracting words
-		int i = 0;
-		boolean setFlag = true;
-		StringBuilder tempStr = new StringBuilder("");
-		String text = "";
-		
-		// parse text
-		for(i=0; i<str.length();i++) {
-			if(str.charAt(i) == ' ' && setFlag) {
-				text = tempStr.toString().toLowerCase();
-				if(exceptionsObj.hashContains(tempStr.toString().toLowerCase())) {
-					// Exception
-					indexWords.addToHash(getCanonicalForm(text));
-				} else if(!stopwordsObj.hashContains(tempStr.toString().toLowerCase())) {
-					// Dictionary
-					indexWords.addToHash(getCanonicalForm(text));
-				}
-				tempStr = new StringBuilder("");  
-				setFlag = false;
-			}
-			else if(Character.isLetter(str.charAt(i))) {
-				tempStr.append(str.charAt(i));
-				setFlag = true;
-			}
-		}
+		return stem;
 	}
 	
 	// Parse the keywords from console to a format with words and associated operation
@@ -238,25 +145,6 @@ public class SearchEngine {
 		return keywords_list;
 	}
 	
-	// Parse the links and remove the fragment
-	private String parseLink(String str) {
-		int i = 0;
-		boolean setFlag = true;
-		StringBuilder tempStr = new StringBuilder("");
-		
-		for(i=0; i<str.length() && setFlag;i++){
-			if(str.charAt(i) != '#'){
-				tempStr.append(str.charAt(i));
-			}
-			else 
-			{
-				setFlag = false;
-			}
-		}
-		
-		return tempStr.toString();
-	}
-
 	// Read keywords from console
 	private String readKeywords() {
 		Scanner scanner = new Scanner(System.in);
@@ -265,238 +153,9 @@ public class SearchEngine {
 	}
 		
 	/*
-	 * Porter algorithm
-	 */
-	private String getCanonicalForm(String text) {
-		PorterStemmer porterStemmer = new PorterStemmer();
-		String stem = porterStemmer.stemWord(text);
-		
-		return stem;
-	}
-	
-	/*
-	 * Direct Index
-	 */
-	// Add word to hash
-	private void addToHash(String _doc, IndexWords _words)
-	{
-		if(!hashContains(_doc)) {
-			docKeys.put(_doc, _words);
-		}
-	}
-	
-	// Check if word exists in hash
-	private boolean hashContains(String _doc)
-	{
-		return docKeys.containsKey(_doc);
-	}
-	
-	// Display words from hash (direct indexing)
-	private void showDirectIndex() {
-		log("> Showing direct index: ", false);
-		for (String doc: docKeys.keySet()) {
-            String key = doc.toString();
-            IndexWords value = docKeys.get(doc);  
-            log("<" + key + ", ", false);  
-            value.showHash();
-            log(">", true);
-		} 
-	}
-	
-	/*
-	 * Inverse Index
-	 */
-	// Add word to hash
-	private void addToHash(String _text, Link _link)
-	{
-		if(!hashLinkContains(_text)) {
-			LinksList ll = new LinksList(_link);
-			wordLinks.put(_text, ll);
-		}
-		else {
-			LinksList ll = (LinksList)wordLinks.get(_text);
-			ll.addLink(_link);
-			wordLinks.replace(_text, ll);
-		}
-	}
-	
-	// Check if word exists in hash
-	private boolean hashLinkContains(String _doc)
-	{
-		return wordLinks.containsKey(_doc);
-	}
-
-	// Display words from hash (inverse indexing)
-	private void showInverseIndex() {
-		int nr = 0;
-		
-		log("> Showing inverse index: ", false);
-		log("< ", false);  
-		for (String doc: wordLinks.keySet()) {
-			nr++;
-            String key = doc.toString();
-            LinksList value = wordLinks.get(doc);
-            log(key + ": ", false);
-            value.show();
-            if(wordLinks.size() > nr )
-            {
-            	log(", ", false);
-            }            
-		}
-		log(">", false);
-	}
-	
-	private LinksList getWordLocations(String _word) {
-		LinksList list = null;
-		if(wordLinks.containsKey(_word)) {
-			list = wordLinks.get(_word);
-			return list;
-		}
-		else {
-			return null;
-		}		
-	}
-	
-	/*
-	 * Process files
-	 */	
-	// Process the HTML file
-	private void processHTML(String _link, String _path) {
-		String dataFile = "./files/output/data_file.txt";
-		String linksFile = "./files/output/links_file.txt";
-		File input = new File(_path);
-		BufferedWriter writerData = openFile(dataFile);
-		BufferedWriter writerLink = openFile(linksFile);
-		Document doc;
-
-		try {
-			/*
-			 * Extract data
-			 */
-			doc = Jsoup.parse(input, null);					// get document from local file	
-			// doc = Jsoup.connect(_link).get();			// get document from web
-			writeToFile(doc.title(), writerData);
-			
-			// meta elements
-			Elements metaElements = doc.select("meta");
-			for (Element meta : metaElements) {
-				if(meta.attr("name") == "keywords" || meta.attr("name") == "description") {
-					writeToFile(meta.attr("content"), writerData);
-				}
-				if(meta.attr("name") == "robots") {
-					writeToFile(meta.attr("content"), writerLink);
-				}
-			}
-			
-			// a attributes
-			Elements aElements = doc.select("a");
-			for (Element a : aElements) {
-				if(a.absUrl("href") != "") {
-					writeToFile(parseLink(a.absUrl("href")), writerLink);
-				}	
-			}
-			
-			// text from body
-			writeToFile(doc.body().text(), writerData);
-			
-			/*
-			 * Process data
-			 */
-			// parse text
-			parseText(doc.body().text(), indexObj);
-			// add to hash
-			addToHash(_link, indexObj);
-			
-			//showHash();
-			
-		} catch (IOException e) {
-			log(e.getMessage(), true);
-		}
-		
-		// close files
-		closeFile(writerData);
-		closeFile(writerLink);
-	}
-	
-	// Process a text file (.txt extension)
-	private void processTextFile(String _path) {
-		StringBuffer stringBuffer = new StringBuffer();
-		String line = null;
-		BufferedReader reader = null;	
-		indexObj = new IndexWords();
-
-		/*
-		 * Extract data
-		 */
-		try {
-			reader = new BufferedReader(new FileReader(_path));
-			
-		} catch (IOException e) {
-			e.printStackTrace();
-		}		
-		
-		try {
-			while((line = reader.readLine()) != null) {
-				stringBuffer.append(line).append("\n");
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-		/*
-		 * Process data
-		 */
-		// parse text
-		parseText(stringBuffer.toString(), indexObj);
-		// add to hash
-		addToHash(_path, indexObj);
-		
-		closeFile(reader);
-	}
-
-	/*
-	 * Indexing
-	 */
-	// Indexes the files in the queue
-	private void indexFiles(Queue<String> files, int _limitLinks) {
-		int limit = 0;
-		int i;
-
-		log("> Building direct index", true);
-		
-		while(!files.isEmpty() && (limit < _limitLinks || _limitLinks == 0)) {
-		  String element = files.poll();
-      	
-		  processTextFile(element);
-		  
-		  limit++;
-		}
-	}
-	
-	// Create the inverse index from the direct indexing
-	private void inverseIndex() {
-		log("> Building inverse index", true);
-		
-		for (String doc: docKeys.keySet()) {
-            String key = doc.toString();
-            IndexWords value = docKeys.get(doc);
-            
-            HashMap<String, Integer> indWords = value.getHashMap();
-            
-            for (String docW: indWords.keySet()) {
-                String keyW = docW.toString();
-                int valueW = indWords.get(docW);
-                
-                Link link = new Link(key, valueW);
-                
-                addToHash(keyW, link);
-            }
-		}
-	}
-	
-	/*
 	 * Search
 	 */
+	/*
 	// Binary Search
 	private void binarySearch() {
 		boolean exit = false;
@@ -897,155 +556,20 @@ public class SearchEngine {
 			}
 		}
 	}
-
-	/*
-	 * Functions for vectorial Search
-	 */
-	
-	// calculate tf for documents
-	private void calculateTfForDocs() {
-		for (String doc: docKeys.keySet()) {
-            String key = doc.toString();
-            IndexWords value = docKeys.get(doc);  
-            value.calculateTf();
-		} 
-	}
-	
-	// show tf for documents
-	private void showTfForDocs() {
-		log("> Showing tf for documents: ", false);
-		for (String doc: docKeys.keySet()) {
-            String key = doc.toString();
-            IndexWords value = docKeys.get(doc);  
-            log("< " + key + ", ", false);
-            value.showTf();
-            log(" >", true);
-		} 
-	}	
-	
-	// show the hash map containing the search results
-	private void showResults(HashMap<String, Double> hash_map) {
-		Map<String, Double> hm = sortByValue(hash_map); 
-		  
-        // print the sorted hashmap 
-        for (Map.Entry<String, Double> en : hm.entrySet()) { 
-            log(" - Document: " + en.getKey() + " [" + en.getValue() + "]", true); 
-        } 
-	}
-	
-	// print to console sorted results
-	private static HashMap<String, Double> sortByValue(HashMap<String,Double> hm) 
-    { 
-        // Create a list from elements of HashMap 
-        List<Map.Entry<String, Double>> list = new LinkedList<Map.Entry<String, Double> >(hm.entrySet()); 
-  
-        // Sort the list 
-        Collections.sort(list, new Comparator<Map.Entry<String, Double> >() { 
-            public int compare(Map.Entry<String, Double> o1,  
-                               Map.Entry<String, Double> o2) 
-            { 
-                return -(o1.getValue()).compareTo(o2.getValue()); 
-            } 
-        }); 
-          
-        // put data from sorted list to hashmap  
-        HashMap<String, Double> temp = new LinkedHashMap<String, Double>(); 
-        for (Map.Entry<String, Double> aa : list) { 
-            temp.put(aa.getKey(), aa.getValue()); 
-        } 
-        return temp; 
-    } 
-	
-	/*
-	 * metoda returneaza idf pentru un anumit termen.
-	 * @param term : un termen dintr-un document
-	 */
-	public double getInverseDocumentFrequency(String term) {
-		if (wordLinks.containsKey(term)) {
-			double size = wordLinks.size();
-			LinksList list = wordLinks.get(term);
-			double documentFrequency = list.size();
-			return Math.log(size / (1 + documentFrequency));
-		} else {
-			return 0;
-		}
-	}
-	
-	public void calculateIdf() {
-		for (String doc: wordLinks.keySet()) {
-            String key = doc.toString();
-            double idf_val;
-            try {
-            	idf_val = getInverseDocumentFrequency(key);
-            }
-            catch(NullPointerException ex) {
-            	idf_val = 0;
-            }
-            
-            idf.put(key, idf_val);
-		}
-	}
-	
-	public void showIdfForTerms() {
-		int nr = 0;
-		
-		log("> Showing idf for documents: ", false);
-		log("< ", false);  
-		for (String doc: idf.keySet()) {
-			nr++;
-            String key = doc.toString();
-            Double value = idf.get(doc);
-            log(key + ": " + value, false);
-            if(idf.size() > nr )
-            {
-            	log(", ", false);
-            }            
-		}
-		log(">", true);
-	}
-	
-	public double cosineSimilarity(double A, double B) {
-    	double sumProduct = 0;
-    	double sumASq = 0;
-    	double sumBSq = 0;
-    	
-    	sumProduct += A * B;
-    	sumASq += A * A;
-    	sumBSq += B * B;
-    	
-    	if (sumASq == 0 && sumBSq == 0) {
-    		return 0;
-    	}
-    	return sumProduct / (Math.sqrt(sumASq) * Math.sqrt(sumBSq));
-    }
-	
-	public double cosineSimilarity(ArrayList<Double> A, ArrayList<Double> B) {
-    	if (A == null || B == null || A.size() == 0 || B.size() == 0 || A.size() != B.size()) {
-    		return 0;
-    	}
-
-    	double sumProduct = 0;
-    	double sumASq = 0;
-    	double sumBSq = 0;
-    	for (int i = 0; i < A.size(); i++) {
-    		sumProduct += A.get(i) * B.get(i);
-    		sumASq += A.get(i) * A.get(i);
-    		sumBSq += B.get(i) * B.get(i);
-    	}
-    	if (sumASq == 0 && sumBSq == 0) {
-    		return 0;
-    	}
-    	return sumProduct / (Math.sqrt(sumASq) * Math.sqrt(sumBSq));
-    }
-	
+	*/	
 	// main function
 	public static void main(String[] args) {
-		SearchEngine parser = new SearchEngine();
+		SearchEngine se = new SearchEngine();
 		FileExplorer fileExp = new FileExplorer();
+		
 		Queue<String> files;
 		int level = 0;									// how many levels to search recursively
-		int links = 0;									// limit the number of links from the queue
+		int links = 10;									// limit the number of links from the queue
 		String directory;
+		
+		int nr_threads = 5;
+		
+		long startTime = System.nanoTime();
 		
 		//parser.processHTML(link, path);
 		
@@ -1055,26 +579,61 @@ public class SearchEngine {
 		//directory = "D:\\Facultate\\Anul 4\\Semestrul I\\ALPD\\Tema de casa\\test_files";
 		directory = "E:\\Facultate\\Anul IV - Facultate\\Semestrul I\\ALPD - Algoritmi paraleli si distribuiti\\Tema de casa\\test-files\\test-files";
 		
-		parser.log("> Getting files from folder: " + directory, true);
+		se.log("> Getting files from folder: " + directory, true);
 				
 		fileExp.searchFiles(directory, level, 0);
 		files = fileExp.getFiles();
 		
-		parser.indexFiles(files, links);
-		//parser.showDirectIndex();
+		int nr_files_in_queue = files.size();
 		
-		parser.calculateTfForDocs();
-		//parser.showTfForDocs();
+		int nr_files_per_thread;
 		
-		parser.inverseIndex();
-		//parser.showInverseIndex();
+		if(nr_files_in_queue > nr_threads) { 
+			nr_files_per_thread = nr_files_in_queue / nr_threads;
+		}
+		else {
+			se.log("> Nr of threads is bigger than files in queue", true);
+			return;
+		}
 		
-		parser.calculateIdf();
-		//parser.showIdfForTerms();
+		ArrayList<Worker> WorkerPool = new ArrayList<Worker>();
+		
+		for(int i=0; i < nr_threads; i++) {
+			Queue<String> temp_files = new LinkedList<String>();
+			for(int j = 0; j<nr_files_per_thread; j++) {
+				String element = files.poll();
+				temp_files.add(element);
+			}
+			Worker T = new Worker("worker_" + i, temp_files, links);
+			WorkerPool.add(T);
+		}
+		
+		if(files.size() > 0) {
+			Worker T = new Worker("worker_last", files, links);
+			WorkerPool.add(T);
+		}
+		
+		for(Worker w: WorkerPool) {
+			w.start();
+		}
+		for(Worker w: WorkerPool) {
+			try {
+				w.join();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		long endTime = System.nanoTime();
+
+		// get difference of two nanoTime values
+		long timeElapsed = endTime - startTime;
+
+		System.out.println("> Execution time in milliseconds : " + timeElapsed / 1000000);
 		
 		//parser.binarySearch();
 		
-		parser.vectorialSearch();
+		//parser.vectorialSearch();
 	}
 
 }
