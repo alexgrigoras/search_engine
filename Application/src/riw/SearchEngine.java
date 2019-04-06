@@ -7,6 +7,7 @@
 package riw;
 
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,6 +35,8 @@ public class SearchEngine {
 	private SpecialWords stopwordsObj;						// hash for stopwords
 	private SpecialWords exceptionsObj;						// hash for exceptions
 	private HashMap<String, LinksList> wordLinks;			// global inverse indexing
+	private HashMap<String, Double> idf;					// global idf
+	private HashMap<String, WordTf> tf;						// global tf
 	
 	/**
 	 * Class constructor
@@ -42,6 +45,8 @@ public class SearchEngine {
 		stopwordsObj = new SpecialWords("./files/special_words/stop_words.txt");
 		exceptionsObj = new SpecialWords("./files/special_words/exception_words.txt");
 		wordLinks = new HashMap<String, LinksList>();
+		idf = new HashMap<String, Double>();
+		tf = new HashMap<String, WordTf>();
 	}
 	
 	/**
@@ -482,12 +487,11 @@ public class SearchEngine {
 	 * @param words_list
 	 * @return
 	 */
-	/*
 	private ArrayList<Double> calculateQueryVector(ArrayList<WordOperation> words_list) {
 		int nrQueryWords = words_list.size();
 		ArrayList<Double> vector = new ArrayList<Double>();
 		
-		int nrDocuments = docKeys.size();
+		int nrDocuments = tf.size(); //docKeys.size(); -- to get nr of docs
 		
 		for(WordOperation word: words_list) {
 			double tf = 1.0 / (double)nrQueryWords;
@@ -508,7 +512,6 @@ public class SearchEngine {
 		
 		return vector;
 	}
-	*/
 	
 	/**
 	 * Calculates the cosine similarity of two numbers
@@ -557,9 +560,232 @@ public class SearchEngine {
     }
 	
 	/**
+	 * Read the tf from file
+	 */
+	public void getTf() {
+		FileExplorer fileExp = new FileExplorer("json");		// file explorer object
+		String directory = "files/tf/";							// directory to search indexes
+		Queue<String> files;									// queue with file names and paths
+		
+		fileExp.searchFiles(directory, 0, 0);
+		files = fileExp.getFiles();
+
+		log("> Get TF from file:", true);
+		
+		for(String fileName: files) {
+	        Object obj = null;
+			
+	        try {
+				obj = new JSONParser().parse(new FileReader(fileName));
+			} catch (IOException | ParseException e) {
+				e.printStackTrace();
+			} 
+	          
+	        // typecasting obj to JSONObject
+	        JSONArray docs = (JSONArray) obj;
+	        
+	        log("\t - file [" + fileName + "] with ", false);
+	        log(docs.size(), false);
+	        log(" docs", true);
+	        
+	        // iterating phoneNumbers
+	        Iterator itr1 = docs.iterator(); 
+	        
+	        while (itr1.hasNext()) {
+	        	JSONObject doc = (JSONObject) itr1.next();
+	        	
+	        	String docName = (String)doc.get("doc");
+
+	        	WordTf wtf = new WordTf();
+	        	
+	        	JSONArray terms = (JSONArray)doc.get("terms");
+	        	
+	        	Iterator itr2 = terms.iterator(); 
+		        
+		        while (itr2.hasNext()) {
+		        	JSONObject term = (JSONObject) itr2.next();
+		        	
+		        	wtf.insertWord((String)term.get("k"), (double)term.get("tf"));
+		        }
+		        
+		        tf.put(docName, wtf);
+	        }
+
+		}
+	}
+	
+	/**
+	 * Display the tf for docs and terms
+	 */
+	public void showTf() {
+		int nr = 0;
+		
+		log("> Showing tf for documents: ", true);  
+		for (String doc: tf.keySet()) {
+			nr++;
+            String key = doc.toString();
+            WordTf value = tf.get(doc);
+            log(" <" + key + " -> ", false);
+            value.show();
+            if(tf.size() > nr )
+            {
+            	log(">", true);
+            }            
+		}
+	}
+	
+	/**
+	 * To be done get tf
+	 * @param _doc
+	 * @param _term
+	 * @return
+	 */
+	public double getTfVal(String _doc, String _term) {
+		if(tf.containsKey(_doc)) {
+			WordTf wtf = tf.get(_doc);
+			return wtf.getTfForWord(_term);
+		}
+		else {
+			return 0;
+		}
+	}
+	
+	/**
+	 * Returns idf for a specified word
+	 * @param term: a word from a document
+	 */
+	public double getInverseDocumentFrequency(String term) {
+		if (wordLinks.containsKey(term)) {
+			double size = wordLinks.size();
+			LinksList list = wordLinks.get(term);
+			double documentFrequency = list.size();
+			return Math.log(size / (1 + documentFrequency));
+		} else {
+			return 0;
+		}
+	}
+	
+	public double getIdfVal(String term) {
+		if (idf.containsKey(term)) {
+			return idf.get(term);
+		} else {
+			return 0;
+		}
+	}
+	
+	/**
+	 * Calculates the idf for the words
+	 */
+	public void calculateIdf() {
+		for (String doc: wordLinks.keySet()) {
+            String key = doc.toString();
+            double idf_val;
+            try {
+            	idf_val = getInverseDocumentFrequency(key);
+            }
+            catch(NullPointerException ex) {
+            	idf_val = 0;
+            }
+            
+            idf.put(key, idf_val);
+		}
+	}
+	
+	/**
+	 * Show calculated IDF for terms
+	 */
+	public void showIdfForTerms() {
+		int nr = 0;
+		
+		log("> Showing idf for documents: ", false);
+		log("< ", false);  
+		for (String doc: idf.keySet()) {
+			nr++;
+            String key = doc.toString();
+            Double value = idf.get(doc);
+            log(key + ": " + value, false);
+            if(idf.size() > nr )
+            {
+            	log(", ", false);
+            }            
+		}
+		log(">", true);
+	}
+	
+	/**
+	 * Write IDF values of words to file in JSON format
+	 */
+	public void writeIdfToFile() {
+		log("> Writing idf to file", true);
+		
+		JSONArray termsArray = new JSONArray();
+		
+		for (String doc: idf.keySet()) {
+            JSONObject termName = new JSONObject();
+            termName.put("k", doc.toString());
+            termName.put("i", idf.get(doc));
+            
+            termsArray.add(termName);
+		}
+		
+		JSONObject termsJson = new JSONObject();
+        termsJson.put("terms", termsArray);
+		
+		// Write JSON file
+        try (FileWriter file = new FileWriter("files/idf/global_idf.json")) {
+            file.write(termsJson.toJSONString());
+            file.flush(); 
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+	}
+	
+	/**
+	 * Read the idf from file
+	 */
+	public void getIdf() {
+		FileExplorer fileExp = new FileExplorer("json");		// file explorer object
+		String directory = "files/idf/";						// directory to search indexes
+		Queue<String> files;									// queue with file names and paths
+		
+		fileExp.searchFiles(directory, 0, 0);
+		files = fileExp.getFiles();
+
+		log("> Get IDF from file:", true);
+		
+		for(String fileName: files) {
+	        Object obj = null;
+			
+	        try {
+				obj = new JSONParser().parse(new FileReader(fileName));
+			} catch (IOException | ParseException e) {
+				e.printStackTrace();
+			} 
+	          
+	        // typecasting obj to JSONObject
+	        JSONObject terms = (JSONObject) obj;
+	        
+	        JSONArray termIdf = (JSONArray) terms.get("terms");
+	        
+	        log("\t - file [" + fileName + "] with ", false);
+	        log(termIdf.size(), false);
+	        log(" indexes", true);
+	        
+	        // iterating phoneNumbers
+	        Iterator itr = termIdf.iterator(); 
+	        
+	        while (itr.hasNext())
+	        {
+	        	JSONObject term = (JSONObject) itr.next();
+	        	
+	        	idf.put((String)term.get("k"), (double)term.get("i"));
+	        } 
+		}
+	}
+
+	/**
 	 * Vectorial Search
 	 */
-	/*
 	private void vectorialSearch() {
 		boolean exit = false;
 		while(exit == false) {
@@ -583,6 +809,9 @@ public class SearchEngine {
 			ArrayList<Double> vector = new ArrayList<Double>();
 			vector = calculateQueryVector(kw_list);
 			
+			log("> Query vector: ", false);
+			log(vector.toString(), true);
+			
 			log("> ", false);			
 			
 			if(list_dimension == 0) {
@@ -598,13 +827,11 @@ public class SearchEngine {
 				
 				HashMap<String, Double> cosSimVal = new HashMap<String, Double>(); 
 				
-				double idf = getInverseDocumentFrequency(word);
+				double idf = getIdfVal(word);
 				for(Link l: list.getLinks()) {
 					String link = l.getLink();
-					if(hashContains(link)) {
-						double tf = docKeys.get(link).getTfOfWord(word);
-						cosSimVal.put(link, cosineSimilarity(vector.get(0), tf*idf));
-					}
+					double tf = getTfVal(link, word);
+					cosSimVal.put(link, cosineSimilarity(vector.get(0), tf*idf));
 				}				
 				
 				showResults(cosSimVal);
@@ -722,13 +949,11 @@ public class SearchEngine {
 				ArrayList<Double> link_vectors = new ArrayList<Double>();
 				
 				for(WordOperation w: kw_list) {
-					double idf = getInverseDocumentFrequency(w.getWord());
+					double idf = getIdfVal(w.getWord());
 					for(Link l: docs_list.getLinks()) {
 						String link = l.getLink();
-						if(hashContains(link)) {
-							double tf = docKeys.get(link).getTfOfWord(w.getWord());
-							link_vectors.add(tf*idf);
-						}
+						double tf = getTfVal(link, w.getWord());
+						link_vectors.add(tf*idf);
 					}				
 				}
 				
@@ -747,7 +972,6 @@ public class SearchEngine {
 			}
 		}
 	}
-	*/
 	
 	/**
 	 * Build the inverse index and tf, idf for terms for each thread
@@ -821,6 +1045,7 @@ public class SearchEngine {
 		log("> Threads finished", true);
 	}
 	
+
 	/**
 	 * Merge the created indexes from each thread
 	 */
@@ -832,6 +1057,8 @@ public class SearchEngine {
 		fileExp.searchFiles(directory, 0, 0);
 		files = fileExp.getFiles();
 
+        log("> Merging the inverse indexes from files:", true);
+        
 		for(String fileName: files) {
 	        Object obj = null;
 			
@@ -844,7 +1071,7 @@ public class SearchEngine {
 	        // typecasting obj to JSONArray
 	        JSONArray terms = (JSONArray) obj;
 	        
-	        log("> Reading file [" + fileName + "] with ", false);
+	        log("\t - file [" + fileName + "] with ", false);
 	        log(terms.size(), false);
 	        log(" indexes", true);
 	        
@@ -874,6 +1101,7 @@ public class SearchEngine {
 		}
 	}
 	
+	
 	/**
 	 * Main function
 	 * @param args: arguments from command line
@@ -886,11 +1114,16 @@ public class SearchEngine {
 		// se.buildIndex();
 		
 		se.mergeIndexes();
+		// se.showInverseIndex();
 		
-		//se.showInverseIndex();
+		// se.calculateIdf();
+		// se.writeIdfToFile();
 		
-		// se.binarySearch();
-		// se.vectorialSearch();
+		se.getIdf();
+		// se.showIdfForTerms();
+		
+		se.getTf();
+		// se.showTf();
 		
 		long endTime = System.nanoTime();
 
@@ -899,6 +1132,9 @@ public class SearchEngine {
 
 		se.log("> Execution time in milliseconds : ", false);
 		se.log(timeElapsed / 1000000, true);
+		
+		// se.binarySearch();
+		se.vectorialSearch();
 	}
 
 }
