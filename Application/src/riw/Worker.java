@@ -36,7 +36,6 @@ public class Worker extends Thread{
 	private IndexWords indexObj;							//
 	private HashMap<String, IndexWords> docKeys;			// local direct indexing and tf
 	private HashMap<String, LinksList> wordLinks;			// local inverse indexing
-	private HashMap<String, Double> idf;					// local idf
 	
 	/**
 	 * Class constructor
@@ -50,7 +49,6 @@ public class Worker extends Thread{
 		docKeys = new HashMap<String, IndexWords>();
 		wordLinks = new HashMap<String, LinksList>();
 		indexObj = new IndexWords();
-		idf = new HashMap<String, Double>();
 		threadName = _threadName;
 		filesQueue = _files;
 	}
@@ -232,7 +230,6 @@ public class Worker extends Thread{
 		return tempStr.toString();
 	}
 
-	
 	/**
 	 * Porter algorithm
 	 * @param text
@@ -244,7 +241,6 @@ public class Worker extends Thread{
 		
 		return stem;
 	}
-
 	
 	/**
 	 * Add word to hash
@@ -267,7 +263,6 @@ public class Worker extends Thread{
 	{
 		return docKeys.containsKey(_doc);
 	}
-	
 	
 	/**
 	 * Display words from hash (direct indexing)
@@ -375,7 +370,6 @@ public class Worker extends Thread{
         }
 	}
 
-	
 	/** 
 	 * Process the HTML file
 	 * @param _link
@@ -580,88 +574,6 @@ public class Worker extends Thread{
             e.printStackTrace();
         }
 	}
-	
-	/**
-	 * Returns idf for a specified word
-	 * @param term : a word from a document
-	 */
-	public double getInverseDocumentFrequency(String term) {
-		if (wordLinks.containsKey(term)) {
-			double size = wordLinks.size();
-			LinksList list = wordLinks.get(term);
-			double documentFrequency = list.size();
-			return Math.log(size / (1 + documentFrequency));
-		} else {
-			return 0;
-		}
-	}
-	
-	/**
-	 * Calculates the idf for the words
-	 */
-	public void calculateIdf() {
-		for (String doc: wordLinks.keySet()) {
-            String key = doc.toString();
-            double idf_val;
-            try {
-            	idf_val = getInverseDocumentFrequency(key);
-            }
-            catch(NullPointerException ex) {
-            	idf_val = 0;
-            }
-            
-            idf.put(key, idf_val);
-		}
-	}
-	
-	/**
-	 * Show calculated IDF for terms
-	 */
-	public void showIdfForTerms() {
-		int nr = 0;
-		
-		log("> Showing idf for documents: ", false);
-		log("< ", false);  
-		for (String doc: idf.keySet()) {
-			nr++;
-            String key = doc.toString();
-            Double value = idf.get(doc);
-            log(key + ": " + value, false);
-            if(idf.size() > nr )
-            {
-            	log(", ", false);
-            }            
-		}
-		log(">", true);
-	}
-	
-	/**
-	 * Write IDF values of words to file in JSON format
-	 */
-	public void writeIdfToFile() {
-		log("> Writing idf to file", true);
-		
-		JSONArray termsArray = new JSONArray();
-		
-		for (String doc: idf.keySet()) {
-            JSONObject termName = new JSONObject();
-            termName.put("k", doc.toString());
-            termName.put("i", idf.get(doc));
-            
-            termsArray.add(termName);
-		}
-		
-		JSONObject termsJson = new JSONObject();
-        termsJson.put("terms", termsArray);
-		
-		// Write JSON file
-        try (FileWriter file = new FileWriter("files/idf/" + threadName + ".json")) {
-            file.write(termsJson.toJSONString());
-            file.flush(); 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-	}
 
 	/**
 	 * Get the thread object
@@ -688,10 +600,6 @@ public class Worker extends Thread{
 		this.inverseIndex();
 		// this.showInverseIndex();
 		this.writeInverseIndexToFile();		
-		
-		this.calculateIdf();
-		// this.showIdfForTerms();
-		this.writeIdfToFile();
 		
 		System.out.println("> Thread " +  threadName + " exiting");
 	}
