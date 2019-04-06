@@ -6,6 +6,8 @@
 	
 package riw;
 
+import static com.mongodb.client.model.Filters.eq;
+
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -21,9 +23,14 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Scanner;
 
+import static com.mongodb.client.model.Filters.eq;
+
+import org.bson.Document;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.*;
+
+import com.mongodb.BasicDBObject;
 
 public class SearchEngine {
 	/**
@@ -34,6 +41,7 @@ public class SearchEngine {
 	private HashMap<String, LinksList> wordLinks;			// global inverse indexing
 	private HashMap<String, Double> idf;					// global idf
 	private HashMap<String, WordTf> tf;						// global tf
+	DatabaseModule dm;
 	
 	/**
 	 * Class constructor
@@ -44,6 +52,7 @@ public class SearchEngine {
 		wordLinks = new HashMap<String, LinksList>();
 		idf = new HashMap<String, Double>();
 		tf = new HashMap<String, WordTf>();
+		dm = new DatabaseModule();
 	}
 	
 	/**
@@ -488,23 +497,28 @@ public class SearchEngine {
 		int nrQueryWords = words_list.size();
 		ArrayList<Double> vector = new ArrayList<Double>();
 		
-		int nrDocuments = tf.size(); //docKeys.size(); -- to get nr of docs
+		int nrDocuments = tf.size();
 		
 		for(WordOperation word: words_list) {
 			double tf = 1.0 / (double)nrQueryWords;
 			double idf;
+
 			LinksList listDocs = getWordLocations(word.getWord());
 			double nrWordDocs = 1;
 			try {
 				nrWordDocs += listDocs.size();
 			}
-			catch(NullPointerException ex){}
+			catch(NullPointerException ex) {}
 			
 			double res = nrDocuments / nrWordDocs;
 			
 			idf = Math.log(res);
 			
-			vector.add(tf*idf);
+			if(idf < 0) {
+				idf = 1;
+			}
+
+			vector.add(tf * idf);
 		}
 		
 		return vector;
@@ -632,12 +646,12 @@ public class SearchEngine {
 	}
 	
 	/**
-	 * To be done get tf
+	 * 
 	 * @param _doc
 	 * @param _term
 	 * @return
 	 */
-	public double getTfVal(String _doc, String _term) {
+	public double getTfValHash(String _doc, String _term) {
 		if(tf.containsKey(_doc)) {
 			WordTf wtf = tf.get(_doc);
 			return wtf.getTfForWord(_term);
@@ -645,6 +659,39 @@ public class SearchEngine {
 		else {
 			return 0;
 		}
+	}
+	
+	/**
+	 * 
+	 * @param _doc
+	 * @param _term
+	 * @return
+	 */
+	public double getTfValDB(String _doc, String _term) {
+		dm.setCollection("tf_values");
+		
+		BasicDBObject criteria = new BasicDBObject();
+		criteria.append("doc", _doc);
+		criteria.append("k", _term);
+		
+		try {
+			Document myDoc = dm.collection.find(criteria).first();
+			return (double) myDoc.get("tf");
+		}
+		catch (NullPointerException e) {
+			return 0;
+		}
+	}
+	
+	/**
+	 * To be done get tf
+	 * @param _doc
+	 * @param _term
+	 * @return
+	 */
+	public double getTfVal(String _doc, String _term) {
+		return getTfValHash(_doc, _term);
+		//return getTfValDB(_doc, _term);
 	}
 	
 	/**
@@ -662,12 +709,44 @@ public class SearchEngine {
 		}
 	}
 	
-	public double getIdfVal(String term) {
+	/**
+	 * 	
+	 * @param term
+	 * @return
+	 */
+	public double getIdfValHash(String term) {
 		if (idf.containsKey(term)) {
 			return idf.get(term);
 		} else {
 			return 0;
 		}
+	}
+	
+	/**
+	 * 
+	 * @param term
+	 * @return
+	 */
+	public double getIdfValDB(String term) {
+		dm.setCollection("idf_values");
+				
+		try {
+			Document myDoc = dm.collection.find(eq("k", term)).first();
+			return (double) myDoc.get("i");
+		}
+		catch (NullPointerException e) {
+			return 0;
+		}
+	}
+	
+	/**
+	 * Gets the value of the calculated idf for the specified word
+	 * @param term: input word
+	 * @return the idf value
+	 */
+	public double getIdfVal(String term) {
+		// return getIdfValHash(term);
+		return getIdfValDB(term);
 	}
 	
 	/**
@@ -735,6 +814,24 @@ public class SearchEngine {
         } catch (IOException e) {
             e.printStackTrace();
         }
+	}
+	
+	/**
+	 * Store IDF to mongoDB database
+	 */
+	public void storeIdfToDB() {
+		log("> Writing idf to file", true);
+		
+		dm.setCollection("idf_values");
+		
+		List<Document> documents = new ArrayList<Document>();
+		
+		for (String doc: idf.keySet()) {          
+            documents.add(new Document("k", doc.toString())
+        			.append("i", idf.get(doc)));
+		}
+		
+		dm.insertMultipleDocs(documents);
 	}
 	
 	/**
@@ -806,9 +903,6 @@ public class SearchEngine {
 			ArrayList<Double> vector = new ArrayList<Double>();
 			vector = calculateQueryVector(kw_list);
 			
-			log("> Query vector: ", false);
-			log(vector.toString(), true);
-			
 			log("> ", false);			
 			
 			if(list_dimension == 0) {
@@ -819,19 +913,26 @@ public class SearchEngine {
 				
 				log(word + " has ", false);
 				LinksList list = getWordLocations(word);
-				log(list.size(), false);
-				log(" results: ", true);				
+				try {
+					log(list.size(), false);
+					
+					log(" results: ", true);				
+					
+					HashMap<String, Double> cosSimVal = new HashMap<String, Double>(); 
+					
+					double idf = getIdfVal(word);
+					for(Link l: list.getLinks()) {
+						String link = l.getLink();
+						double tf = getTfVal(link, word);
+						cosSimVal.put(link, cosineSimilarity(vector.get(0), tf*idf));
+					}				
+					
+					showResults(cosSimVal);
+				}
+				catch (NullPointerException ex) {
+					log("0 results", true);
+				}
 				
-				HashMap<String, Double> cosSimVal = new HashMap<String, Double>(); 
-				
-				double idf = getIdfVal(word);
-				for(Link l: list.getLinks()) {
-					String link = l.getLink();
-					double tf = getTfVal(link, word);
-					cosSimVal.put(link, cosineSimilarity(vector.get(0), tf*idf));
-				}				
-				
-				showResults(cosSimVal);
 			}
 			else {
 				for(int i = 0; i < list_dimension - 1; i++) {
@@ -1018,11 +1119,12 @@ public class SearchEngine {
 				String element = files.poll();
 				temp_files.add(element);
 			}
+			
 			Worker T = new Worker("worker_" + i, temp_files);
 			WorkerPool.add(T);
 		}
 		
-		if(files.size() > 0) {
+		if(files.size() > 0) {			
 			Worker T = new Worker("worker_last", files);
 			WorkerPool.add(T);
 		}
@@ -1108,13 +1210,14 @@ public class SearchEngine {
 
 		long startTime = System.nanoTime();
 		
-		// se.buildIndex();
+		//se.buildIndex();
 		
 		se.mergeIndexes();
 		// se.showInverseIndex();
 		
 		// se.calculateIdf();
 		// se.writeIdfToFile();
+		// se.storeIdfToDB();
 		
 		se.getIdf();
 		// se.showIdfForTerms();
