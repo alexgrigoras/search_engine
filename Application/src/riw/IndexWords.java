@@ -39,7 +39,6 @@ public class IndexWords {
 		return indWords.containsKey(_text);
 	}
 	
-	
 	// displays the hash table
 	public void showHash() {
 		int nr = 0;
@@ -103,4 +102,8 @@ public class IndexWords {
 		return indWords.size();
 	}
 
+	// returns the tf hashmap
+	public HashMap<String, Double> getTf() {
+		return tf;
+	}
 }
