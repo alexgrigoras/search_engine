@@ -1,5 +1,10 @@
-package riw;
+/**
+ * @title Search engine application
+ * @author Alexandru Grigoras
+ * @version 4.0 
+ */
 
+package riw;
 
 import org.bson.Document;
 

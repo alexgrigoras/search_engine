@@ -1,16 +1,13 @@
 /**
  * @title Search engine application
  * @author Alexandru Grigoras
- * @version 3.0 
+ * @version 4.0 
  */
 
 package riw;
 
 import java.util.HashMap;
 
-/**
- * 
- */
 public class IndexWords {
 	private HashMap<String, Integer> indWords = null;				// hash set with words
 	private HashMap<String, Double> tf = null;

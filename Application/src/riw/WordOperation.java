@@ -1,21 +1,20 @@
 /**
  * @title Search engine application
  * @author Alexandru Grigoras
- * @version 3.0 
+ * @version 4.0 
  */
 
 package riw;
 
-//
+/**
+ * Operation enumeration
+ */
 enum OpType { 
     AND,
     OR, 
     NOT
 }
 
-/**
- * 
- */
 public class WordOperation {
 	private String word;
 	private OpType operation;

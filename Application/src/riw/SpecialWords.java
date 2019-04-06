@@ -1,7 +1,7 @@
 /**
  * @title Search engine application
  * @author Alexandru Grigoras
- * @version 3.0 
+ * @version 4.0 
  */
 
 package riw;
@@ -11,39 +11,54 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashSet;
 
-/**
- * 
- */
 public class SpecialWords {
+	/**
+	 * Variables
+	 */
 	private HashSet<String> sWords = null;					// hash set with words
 	private String fileName;								// file name
 	
-	// SpecialWords constructor
+	/**
+	 * SpecialWords constructor
+	 * @param _fileName
+	 */
 	public SpecialWords(String _fileName) {
 		fileName = _fileName;
 		sWords = new HashSet<String>();		
 		makeHashTable();
 	}
 	
-	// add word to hash
+	/**
+	 * add word to hash
+	 * @param _text
+	 */
 	private void addToHash(String _text)
 	{
 		sWords.add(_text);
 	}
 	
-	// check if word exists in hash
+	/**
+	 * check if word exists in hash
+	 * @param _text
+	 * @return
+	 */
 	public boolean hashContains(String _text)
 	{
 		return sWords.contains(_text);
 	}
 	
-	// show hash table
+	/**
+	 * show hash table
+	 */
 	public void showHashTable()
 	{
 		System.out.println(sWords.toString());
 	}
 	
-	// Close an opened file
+	/**
+	 * Close an opened file
+	 * @param reader
+	 */
 	private static void closeFile(BufferedReader reader)
 	{
 		try {
@@ -53,7 +68,9 @@ public class SpecialWords {
 		}
 	}
 	
-	// create the hash table
+	/**
+	 * create the hash table
+	 */
 	private void makeHashTable()
 	{
 		BufferedReader reader = null;									
@@ -76,7 +93,10 @@ public class SpecialWords {
 		closeFile(reader);
 	}
 	
-	// main function
+	/**
+	 * main function
+	 * @param args
+	 */
 	public static void main(String[] args) {
 		SpecialWords st_obj = new SpecialWords("stop_words.txt");
 		st_obj.showHashTable();

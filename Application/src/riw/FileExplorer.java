@@ -1,7 +1,7 @@
 /**
  * @title Search engine application
  * @author Alexandru Grigoras
- * @version 3.0 
+ * @version 4.0 
  */
 
 package riw;
@@ -10,9 +10,6 @@ import java.io.File;
 import java.util.LinkedList;
 import java.util.Queue;
 
-/**
- * 
- */
 public class FileExplorer {
 	/**
 	 * Variables

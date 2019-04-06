@@ -1,3 +1,9 @@
+/**
+ * @title Search engine application
+ * @author Alexandru Grigoras
+ * @version 4.0 
+ */
+
 package riw;
 
 import java.io.BufferedReader;

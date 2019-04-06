@@ -1,7 +1,7 @@
 /**
  * @title Search engine application
  * @author Alexandru Grigoras
- * @version 3.0 
+ * @version 4.0 
  */
 	
 package riw;
@@ -25,9 +25,6 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.*;
 
-/**
- * 
- */
 public class SearchEngine {
 	/**
 	 * Variables
