@@ -13,20 +13,14 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
-import java.util.Scanner;
 
+import org.bson.Document;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
@@ -375,12 +369,41 @@ public class Worker extends Thread{
             e.printStackTrace();
         }
 	}
+	
+	/**
+	 * Store inverse index to mongoDB
+	 */
+	public void storeInverseIndexToDB() {
+		log("> Writing inverse index to file", true);
+		
+		DatabaseModule dm = new DatabaseModule("inverse_index_values");
+		
+		for (String doc: wordLinks.keySet()) {
+			
+            String key = doc.toString();
+            LinksList value = wordLinks.get(doc);
+            ArrayList<Link> links = value.getLinks(); 
+            
+            List<Document> documents = new ArrayList<Document>();
+            
+            for(Link l: links) {           	
+            	 documents.add(new Document("d", l.getLink())
+             			.append("c", l.getFrequency()));
+            }
+            
+            Document docum = new Document("term", key)
+            		.append("docs", documents);
+    		
+    		dm.insertDoc(docum);
+		}
+	}
 
 	/** 
 	 * Process the HTML file
 	 * @param _link
 	 * @param _path
 	 */
+	/*
 	private void processHTML(String _link, String _path) {
 		String dataFile = "./files/output/data_file.txt";
 		String linksFile = "./files/output/links_file.txt";
@@ -390,9 +413,6 @@ public class Worker extends Thread{
 		Document doc;
 
 		try {
-			/*
-			 * Extract data
-			 */
 			doc = Jsoup.parse(input, null);					// get document from local file	
 			// doc = Jsoup.connect(_link).get();			// get document from web
 			writeStringToFile(doc.title(), writerData);
@@ -419,9 +439,6 @@ public class Worker extends Thread{
 			// text from body
 			writeStringToFile(doc.body().text(), writerData);
 			
-			/*
-			 * Process data
-			 */
 			// parse text
 			parseText(doc.body().text(), indexObj);
 			// add to hash
@@ -437,6 +454,7 @@ public class Worker extends Thread{
 		closeFile(writerData);
 		closeFile(writerLink);
 	}
+	*/
 	
 	/**
 	 * Process a text file (.txt extension)
@@ -580,6 +598,33 @@ public class Worker extends Thread{
             e.printStackTrace();
         }
 	}
+	
+	/**
+	 * Store the tf in the MongoDB Database
+	 */
+	private void storeTfToDB() {
+		log("> Storing tf to file", true);
+		
+		DatabaseModule dm = new DatabaseModule("tf_values");
+		
+		for (String doc: docKeys.keySet()) {
+			
+            String key = doc.toString();
+            IndexWords value = docKeys.get(doc);
+            
+            HashMap<String, Double> termTf = value.getTf(); 
+    		
+            for (String word: termTf.keySet()) {
+        		Document docum = new Document("doc", key)
+        				.append("k", word.toString())
+            			.append("tf", termTf.get(word));
+            	
+            	dm.insertDoc(docum);
+    		} 
+                        
+
+		}
+	}
 
 	/**
 	 * Get the thread object
@@ -601,11 +646,13 @@ public class Worker extends Thread{
 		
 		this.calculateTfForDocs();
 		// this.showTfForDocs();
-		this.writeTfToFile();	  
+		// this.writeTfToFile();
+		this.storeTfToDB();
 		
 		this.inverseIndex();
 		// this.showInverseIndex();
-		this.writeInverseIndexToFile();		
+		// this.writeInverseIndexToFile();
+		//this.storeInverseIndexToDB();
 		
 		System.out.println("> Thread " +  threadName + " exiting");
 	}
