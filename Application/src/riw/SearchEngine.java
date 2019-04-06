@@ -6,48 +6,50 @@
 	
 package riw;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Scanner;
-import java.util.Map;
-import java.util.List;
-import java.util.Comparator;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.*;
 
 /**
  * 
  */
 public class SearchEngine {
-	private SpecialWords stopwordsObj;						// create hash for exceptions and stopwords
-	private SpecialWords exceptionsObj;
+	/**
+	 * Variables
+	 */
+	private SpecialWords stopwordsObj;						// hash for stopwords
+	private SpecialWords exceptionsObj;						// hash for exceptions
+	private HashMap<String, LinksList> wordLinks;			// global inverse indexing
 	
 	/**
-	 * Methods
+	 * Class constructor
 	 */
-	// Class constructor
 	public SearchEngine() {
 		stopwordsObj = new SpecialWords("./files/special_words/stop_words.txt");
 		exceptionsObj = new SpecialWords("./files/special_words/exception_words.txt");
+		wordLinks = new HashMap<String, LinksList>();
 	}
 	
-	// Log data to console
-	private void log(String msg, boolean newLine) {
+	/**
+	 * Log data to console for a string
+	 * @param msg
+	 * @param newLine
+	 */
+	private static void log(String msg, boolean newLine) {
 		if(newLine) {
 			System.out.println(msg);
         }
@@ -55,7 +57,13 @@ public class SearchEngine {
 			System.out.print(msg);
 		}
 	}
-	private void log(int number, boolean newLine) {
+	
+	/**
+	 * Log data to console for an integer number
+	 * @param number
+	 * @param newLine
+	 */
+	private static void log(int number, boolean newLine) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(number);
 		if(newLine) {
@@ -65,7 +73,13 @@ public class SearchEngine {
 			System.out.print(sb.toString());
 		}
 	}
-	private void log(double number, boolean newLine) {
+	
+	/**
+	 * Log data to console for a double number
+	 * @param number
+	 * @param newLine
+	 */
+	private static void log(double number, boolean newLine) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(number);
 		if(newLine) {
@@ -75,16 +89,24 @@ public class SearchEngine {
 			System.out.print(sb.toString());
 		}
 	}
-
-	// Porter algorithm
+	
+	/**
+	 * Porter algorithm
+	 * @param text: a word to be processed
+	 * @return the canonical form of the word
+	 */
 	private String getCanonicalForm(String text) {
 		PorterStemmer porterStemmer = new PorterStemmer();
 		String stem = porterStemmer.stemWord(text);
 		
 		return stem;
 	}
-	
-	// Parse the keywords from console to a format with words and associated operation
+	 
+	/**
+	 * Parse the keywords from console to a format with words and associated operation
+	 * @param keywords: the keywords from console
+	 * @return an arraylist with the words and operations
+	 */
 	private ArrayList<WordOperation> parseKeywords(String keywords) {
 		// variables for extracting words
 		int i = 0;
@@ -144,19 +166,133 @@ public class SearchEngine {
 		
 		return keywords_list;
 	}
-	
-	// Read keywords from console
+
+	/**
+	 * Read keywords from console
+	 * @return a string with the keywords
+	 */
 	private String readKeywords() {
 		Scanner scanner = new Scanner(System.in);
-		String keywords = scanner.nextLine();		
+		String keywords = scanner.nextLine();	
+		
 		return keywords;
 	}
-		
-	/*
-	 * Search
+	
+	/**
+	 * Get the documents for a specified word
+	 * @param _word: word to be searched
+	 * @return a list with documents
 	 */
-	/*
-	// Binary Search
+	private LinksList getWordLocations(String _word) {
+		LinksList list = null;
+		if(wordLinks.containsKey(_word)) {
+			list = wordLinks.get(_word);
+			return list;
+		}
+		else {
+			return null;
+		}		
+	}
+	
+	/**
+	 * Print to console sorted results
+	 * @param hm
+	 * @return
+	 */
+	private static HashMap<String, Double> sortByValue(HashMap<String,Double> hm) 
+    { 
+        // Create a list from elements of HashMap 
+        List<Map.Entry<String, Double>> list = new LinkedList<Map.Entry<String, Double> >(hm.entrySet()); 
+  
+        // Sort the list 
+        Collections.sort(list, new Comparator<Map.Entry<String, Double> >() { 
+            public int compare(Map.Entry<String, Double> o1,  
+                               Map.Entry<String, Double> o2) 
+            { 
+                return -(o1.getValue()).compareTo(o2.getValue()); 
+            } 
+        }); 
+          
+        // put data from sorted list to hashmap  
+        HashMap<String, Double> temp = new LinkedHashMap<String, Double>(); 
+        for (Map.Entry<String, Double> aa : list) { 
+            temp.put(aa.getKey(), aa.getValue()); 
+        } 
+        return temp; 
+    } 
+	
+	/**
+	 * Show the hash map containing the search results
+	 * @param hash_map
+	 */
+	private void showResults(HashMap<String, Double> hash_map) {
+		Map<String, Double> hm = sortByValue(hash_map); 
+		  
+        // print the sorted hashmap 
+        for (Map.Entry<String, Double> en : hm.entrySet()) { 
+            log(" - Document: " + en.getKey() + " [" + en.getValue() + "]", true); 
+        } 
+	}
+	
+	/**
+	 * Add word to hash
+	 * @param _text
+	 * @param _link
+	 */
+	private void addToHash(String _text, Link _link)
+	{
+		if(!hashLinkContains(_text)) {
+			LinksList ll = new LinksList(_link);
+			wordLinks.put(_text, ll);
+		}
+		else {
+			LinksList ll = wordLinks.get(_text);
+			ll.addLink(_link);
+			wordLinks.replace(_text, ll);
+		}
+	}
+	
+	/**
+	 * Check if word exists in hash
+	 * @param _doc
+	 * @return
+	 */
+	private boolean hashLinkContains(String _doc)
+	{
+		return wordLinks.containsKey(_doc);
+	}
+	
+	/** 
+	 * Display words from hash (inverse indexing)
+	 */
+	public void showInverseIndex() {
+		int nr = 0;
+		
+		if(wordLinks.size() == 0) {
+			log("> Index has not been constructed or merged", true);
+			log("> Exitting", true);
+			System.exit(1);
+		}
+		
+		log("> Showing inverse index: ", false);
+		log("< ", false);  
+		for (String doc: wordLinks.keySet()) {
+			nr++;
+			String key = doc.toString();
+			LinksList value = wordLinks.get(doc);
+			log(key + ": ", false);
+			value.show();
+			if(wordLinks.size() > nr )
+			{
+				log(", ", false);
+			}            
+		}
+		log(">", true);
+	}
+	
+	/**
+	 * Binary Search
+	 */
 	private void binarySearch() {
 		boolean exit = false;
 		while(exit == false) {
@@ -341,7 +477,12 @@ public class SearchEngine {
 		}
 	}
 	
-	// Returns a vector with tf*idf for searched words
+	/**
+	 * Returns a vector with tf*idf for searched words
+	 * @param words_list
+	 * @return
+	 */
+	/*
 	private ArrayList<Double> calculateQueryVector(ArrayList<WordOperation> words_list) {
 		int nrQueryWords = words_list.size();
 		ArrayList<Double> vector = new ArrayList<Double>();
@@ -367,8 +508,58 @@ public class SearchEngine {
 		
 		return vector;
 	}
+	*/
 	
-	// Vectorial Search
+	/**
+	 * Calculates the cosine similarity of two numbers
+	 * @param A: double number
+	 * @param B: double number
+	 * @return double value of cosine similarity
+	 */
+	public double cosineSimilarity(double A, double B) {
+    	double sumProduct = 0;
+    	double sumASq = 0;
+    	double sumBSq = 0;
+    	
+    	sumProduct += A * B;
+    	sumASq += A * A;
+    	sumBSq += B * B;
+    	
+    	if (sumASq == 0 && sumBSq == 0) {
+    		return 0;
+    	}
+    	return sumProduct / (Math.sqrt(sumASq) * Math.sqrt(sumBSq));
+    }
+
+	/**
+	 * Calculates the cosine similarity of two vectors
+	 * @param A: arraylist A
+	 * @param B: arrayList B
+	 * @return double value of cosine similarity
+	 */
+	public double cosineSimilarity(ArrayList<Double> A, ArrayList<Double> B) {
+    	if (A == null || B == null || A.size() == 0 || B.size() == 0 || A.size() != B.size()) {
+    		return 0;
+    	}
+
+    	double sumProduct = 0;
+    	double sumASq = 0;
+    	double sumBSq = 0;
+    	for (int i = 0; i < A.size(); i++) {
+    		sumProduct += A.get(i) * B.get(i);
+    		sumASq += A.get(i) * A.get(i);
+    		sumBSq += B.get(i) * B.get(i);
+    	}
+    	if (sumASq == 0 && sumBSq == 0) {
+    		return 0;
+    	}
+    	return sumProduct / (Math.sqrt(sumASq) * Math.sqrt(sumBSq));
+    }
+	
+	/**
+	 * Vectorial Search
+	 */
+	/*
 	private void vectorialSearch() {
 		boolean exit = false;
 		while(exit == false) {
@@ -556,43 +747,45 @@ public class SearchEngine {
 			}
 		}
 	}
-	*/	
-	// main function
-	public static void main(String[] args) {
-		SearchEngine se = new SearchEngine();
-		FileExplorer fileExp = new FileExplorer();
-		
-		Queue<String> files;
-		int level = 0;									// how many levels to search recursively
-		int links = 10;									// limit the number of links from the queue
-		String directory;
-		
-		int nr_threads = 5;
-		
-		long startTime = System.nanoTime();
-		
-		//parser.processHTML(link, path);
+	*/
+	
+	/**
+	 * Build the inverse index and tf, idf for terms for each thread
+	 */
+	public void buildIndex()
+	{
+		FileExplorer fileExp = new FileExplorer("txt");		// file explorer object
+		String directory;									// directory name to be processed		
+		Queue<String> files;								// queue with file names and paths
+		int level = 0;										// how many levels to search recursively
+		int links = 0;										// limit the number of links from the queue
+		int nr_threads = 5;									// number of threads
 		
 		//parser.log("> Type the selected directory: ", false);
 		//directory = parser.readKeywords();
 		
-		//directory = "D:\\Facultate\\Anul 4\\Semestrul I\\ALPD\\Tema de casa\\test_files";
+		// directory = "D:\\Facultate\\Anul 4\\Semestrul I\\ALPD\\Tema de casa\\test_files";
 		directory = "E:\\Facultate\\Anul IV - Facultate\\Semestrul I\\ALPD - Algoritmi paraleli si distribuiti\\Tema de casa\\test-files\\test-files";
 		
-		se.log("> Getting files from folder: " + directory, true);
+		log("> Getting files from folder: " + directory, true);
 				
 		fileExp.searchFiles(directory, level, 0);
-		files = fileExp.getFiles();
 		
-		int nr_files_in_queue = files.size();
+		if(links > 0) {
+			files = fileExp.getFiles(links);
+		}
+		else {
+			files = fileExp.getFiles();
+		}
 		
+		int nr_files_in_queue = files.size();		
 		int nr_files_per_thread;
 		
-		if(nr_files_in_queue > nr_threads) { 
+		if(nr_files_in_queue >= nr_threads) { 
 			nr_files_per_thread = nr_files_in_queue / nr_threads;
 		}
 		else {
-			se.log("> Nr of threads is bigger than files in queue", true);
+			log("> Nr of threads is bigger than files in queue", true);
 			return;
 		}
 		
@@ -604,36 +797,108 @@ public class SearchEngine {
 				String element = files.poll();
 				temp_files.add(element);
 			}
-			Worker T = new Worker("worker_" + i, temp_files, links);
+			Worker T = new Worker("worker_" + i, temp_files);
 			WorkerPool.add(T);
 		}
 		
 		if(files.size() > 0) {
-			Worker T = new Worker("worker_last", files, links);
+			Worker T = new Worker("worker_last", files);
 			WorkerPool.add(T);
 		}
 		
 		for(Worker w: WorkerPool) {
 			w.start();
 		}
+		
 		for(Worker w: WorkerPool) {
 			try {
-				w.join();
+				w.getThread().join();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
+		
+		log("> Threads finished", true);
+	}
+	
+	/**
+	 * Merge the created indexes from each thread
+	 */
+	public void mergeIndexes() {
+		FileExplorer fileExp = new FileExplorer("json");		// file explorer object
+		String directory = "files/indexes/";					// directory to search indexes
+		Queue<String> files;								// queue with file names and paths
+		
+		fileExp.searchFiles(directory, 0, 0);
+		files = fileExp.getFiles();
+
+		for(String fileName: files) {
+	        Object obj = null;
+			
+	        try {
+				obj = new JSONParser().parse(new FileReader(fileName));
+			} catch (IOException | ParseException e) {
+				e.printStackTrace();
+			} 
+	          
+	        // typecasting obj to JSONArray
+	        JSONArray terms = (JSONArray) obj;
+	        
+	        log("> Reading file [" + fileName + "] with ", false);
+	        log(terms.size(), false);
+	        log(" indexes", true);
+	        
+	        
+	        // iterating phoneNumbers 
+	        Iterator itr1 = terms.iterator(); 
+	          
+	        while (itr1.hasNext())  
+	        {
+	        	JSONObject term = (JSONObject) itr1.next();
+	        	
+	        	String termName = (String)term.get("term");
+	        	
+	        	JSONArray docs = (JSONArray)term.get("docs"); 
+	            
+	            Iterator itr2 = docs.iterator();
+	            
+	            while (itr2.hasNext()) { 
+	            	JSONObject doc = (JSONObject) itr2.next();
+	            	
+	            	Link l = new Link((String)doc.get("d"), (int)((long)doc.get("c")));
+	            	
+	            	addToHash(termName, l);
+	            }
+	        } 
+
+		}
+	}
+	
+	/**
+	 * Main function
+	 * @param args: arguments from command line
+	 */
+	public static void main(String[] args) {
+		SearchEngine se = new SearchEngine();
+
+		long startTime = System.nanoTime();
+		
+		// se.buildIndex();
+		
+		se.mergeIndexes();
+		
+		//se.showInverseIndex();
+		
+		// se.binarySearch();
+		// se.vectorialSearch();
 		
 		long endTime = System.nanoTime();
 
 		// get difference of two nanoTime values
 		long timeElapsed = endTime - startTime;
 
-		System.out.println("> Execution time in milliseconds : " + timeElapsed / 1000000);
-		
-		//parser.binarySearch();
-		
-		//parser.vectorialSearch();
+		se.log("> Execution time in milliseconds : ", false);
+		se.log(timeElapsed / 1000000, true);
 	}
 
 }
