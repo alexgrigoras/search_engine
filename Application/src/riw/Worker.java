@@ -26,28 +26,24 @@ import org.jsoup.select.Elements;
 
 public class Worker extends Thread{
 	/**
-	 * Arguments
+	 * Variables
 	 */
-	private Thread t;
-	private String threadName;
-	Queue<String> files;
-	int links = 5;
-	   
-	private SpecialWords stopwordsObj;						// create hash for exceptions and stopwords
-	private SpecialWords exceptionsObj;
-	private IndexWords indexObj;
-	private HashMap<String, IndexWords> docKeys;			// indexare directa + tf
-	private HashMap<String, LinksList> wordLinks;			// indexare inversa	
-	private HashMap<String, Double> idf;					// idf
-	
-
+	private Thread t;										// thread object
+	private String threadName;								// thread name
+	private Queue<String> filesQueue;						// a queue for files to be processed
+	private SpecialWords stopwordsObj;						// hash for stopwords
+	private SpecialWords exceptionsObj;						// hash for exceptions
+	private IndexWords indexObj;							//
+	private HashMap<String, IndexWords> docKeys;			// local direct indexing and tf
+	private HashMap<String, LinksList> wordLinks;			// local inverse indexing
+	private HashMap<String, Double> idf;					// local idf
 	
 	/**
-	 * Methods
+	 * Class constructor
+	 * @param _threadName: the thread name
+	 * @param _files: a queue with files to process
 	 */
-	// Class constructor
-
-	public Worker(String _threadName, Queue<String> _files, int _links)
+	public Worker(String _threadName, Queue<String> _files)
 	{
 		stopwordsObj = new SpecialWords("./files/special_words/stop_words.txt");
 		exceptionsObj = new SpecialWords("./files/special_words/exception_words.txt");
@@ -55,13 +51,15 @@ public class Worker extends Thread{
 		wordLinks = new HashMap<String, LinksList>();
 		indexObj = new IndexWords();
 		idf = new HashMap<String, Double>();
-		
 		threadName = _threadName;
-		files = _files;
-		links = _links;
+		filesQueue = _files;
 	}
 	
-	// Log data to console
+	/**
+	 * Log data to console for a string
+	 * @param msg
+	 * @param newLine
+	 */
 	private static void log(String msg, boolean newLine) {
 		if(newLine) {
 			System.out.println(msg);
@@ -70,6 +68,12 @@ public class Worker extends Thread{
 			System.out.print(msg);
 		}
 	}
+	
+	/**
+	 * Log data to console for an integer number
+	 * @param number
+	 * @param newLine
+	 */
 	private static void log(int number, boolean newLine) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(number);
@@ -80,6 +84,12 @@ public class Worker extends Thread{
 			System.out.print(sb.toString());
 		}
 	}
+	
+	/**
+	 * Log data to console for a double number
+	 * @param number
+	 * @param newLine
+	 */
 	private static void log(double number, boolean newLine) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(number);
@@ -91,19 +101,25 @@ public class Worker extends Thread{
 		}
 	}
 	
-	/*
-	 * File process
+	/**
+	 * Write a string to a specified file
+	 * @param str: string to be written
+	 * @param writer: the file writer opened for writing
+	 * @throws IOException
 	 */
-	// Write data to a specified file
-	private void writeToFile(String str, BufferedWriter writer) 
+	private void writeStringToFile(String str, BufferedWriter writer) 
 		throws IOException {
 	    	writer.append(str);
 	    	writer.append("\n");
 	}
-	
-	// Erase content from a file
+	 
+	/**
+	 * Erase content from a file
+	 * @param str: file name
+	 */
 	private void eraseFile(String str) {
 	  	File f = new File(str);
+	  	
 	    if(f.exists()){
 	    	f.delete();
 	    	try {
@@ -114,7 +130,11 @@ public class Worker extends Thread{
 	    }
 	}
 	
-	// Open the file from disk
+	/**
+	 * Open the file from disk
+	 * @param fileName
+	 * @return
+	 */
 	private BufferedWriter openFile(String fileName)
 	{
 		BufferedWriter writer = null;
@@ -130,7 +150,10 @@ public class Worker extends Thread{
 		return writer;
 	}
 	
-	// Close an opened file
+	/**
+	 * Close an opened file
+	 * @param writer
+	 */
 	private void closeFile(BufferedWriter writer)
 	{
 		try {
@@ -139,6 +162,11 @@ public class Worker extends Thread{
 			e.printStackTrace();
 		}
 	}
+	
+	/**
+	 * Close an opened file
+	 * @param reader
+	 */
 	private static void closeFile(BufferedReader reader)
 	{
 		try {
@@ -147,11 +175,12 @@ public class Worker extends Thread{
 			e.printStackTrace();
 		}
 	}
-	
-	/*
-	 * Words process
-	 */	
-	// Get words from text
+
+	/**
+	 * Get words from text
+	 * @param str
+	 * @param indexWords
+	 */
 	private void parseText(String str, IndexWords indexWords) {
 		// variables for extracting words
 		int i = 0;
@@ -179,9 +208,12 @@ public class Worker extends Thread{
 			}
 		}
 	}
-
 	
-	// Parse the links and remove the fragment
+	/**
+	 * Parse the links and remove the fragment
+	 * @param str
+	 * @return
+	 */
 	private String parseLink(String str) {
 		int i = 0;
 		boolean setFlag = true;
@@ -200,9 +232,11 @@ public class Worker extends Thread{
 		return tempStr.toString();
 	}
 
-		
-	/*
+	
+	/**
 	 * Porter algorithm
+	 * @param text
+	 * @return
 	 */
 	private String getCanonicalForm(String text) {
 		PorterStemmer porterStemmer = new PorterStemmer();
@@ -210,11 +244,13 @@ public class Worker extends Thread{
 		
 		return stem;
 	}
+
 	
-	/*
-	 * Direct Index
+	/**
+	 * Add word to hash
+	 * @param _doc
+	 * @param _words
 	 */
-	// Add word to hash
 	private void addToHash(String _doc, IndexWords _words)
 	{
 		if(!hashContains(_doc)) {
@@ -222,13 +258,20 @@ public class Worker extends Thread{
 		}
 	}
 	
-	// Check if word exists in hash
+	/**
+	 * Check if word exists in hash
+	 * @param _doc
+	 * @return
+	 */
 	private boolean hashContains(String _doc)
 	{
 		return docKeys.containsKey(_doc);
 	}
 	
-	// Display words from hash (direct indexing)
+	
+	/**
+	 * Display words from hash (direct indexing)
+	 */
 	private void showDirectIndex() {
 		log("> Showing direct index: ", false);
 		for (String doc: docKeys.keySet()) {
@@ -240,10 +283,11 @@ public class Worker extends Thread{
 		} 
 	}
 	
-	/*
-	 * Inverse Index
+	/**
+	 * Add word to hash
+	 * @param _text
+	 * @param _link
 	 */
-	// Add word to hash
 	private void addToHash(String _text, Link _link)
 	{
 		if(!hashLinkContains(_text)) {
@@ -257,13 +301,19 @@ public class Worker extends Thread{
 		}
 	}
 	
-	// Check if word exists in hash
+	/**
+	 * Check if word exists in hash
+	 * @param _doc
+	 * @return
+	 */
 	private boolean hashLinkContains(String _doc)
 	{
 		return wordLinks.containsKey(_doc);
 	}
 
-	// Display words from hash (inverse indexing)
+	/**
+	 * Display words from hash (inverse indexing)
+	 */
 	public void showInverseIndex() {
 		int nr = 0;
 		
@@ -283,8 +333,11 @@ public class Worker extends Thread{
 		log(">", true);
 	}
 	
+	/**
+	 * Write inverse index to file
+	 */
 	public void writeInverseIndexToFile() {
-		log("> Writing iverse index to file", true);
+		log("> Writing inverse index to file", true);
 		
 		JSONArray wordsJson = new JSONArray();
 		
@@ -321,22 +374,13 @@ public class Worker extends Thread{
             e.printStackTrace();
         }
 	}
+
 	
-	private LinksList getWordLocations(String _word) {
-		LinksList list = null;
-		if(wordLinks.containsKey(_word)) {
-			list = wordLinks.get(_word);
-			return list;
-		}
-		else {
-			return null;
-		}		
-	}
-	
-	/*
-	 * Process files
-	 */	
-	// Process the HTML file
+	/** 
+	 * Process the HTML file
+	 * @param _link
+	 * @param _path
+	 */
 	private void processHTML(String _link, String _path) {
 		String dataFile = "./files/output/data_file.txt";
 		String linksFile = "./files/output/links_file.txt";
@@ -351,16 +395,16 @@ public class Worker extends Thread{
 			 */
 			doc = Jsoup.parse(input, null);					// get document from local file	
 			// doc = Jsoup.connect(_link).get();			// get document from web
-			writeToFile(doc.title(), writerData);
+			writeStringToFile(doc.title(), writerData);
 			
 			// meta elements
 			Elements metaElements = doc.select("meta");
 			for (Element meta : metaElements) {
 				if(meta.attr("name") == "keywords" || meta.attr("name") == "description") {
-					writeToFile(meta.attr("content"), writerData);
+					writeStringToFile(meta.attr("content"), writerData);
 				}
 				if(meta.attr("name") == "robots") {
-					writeToFile(meta.attr("content"), writerLink);
+					writeStringToFile(meta.attr("content"), writerLink);
 				}
 			}
 			
@@ -368,12 +412,12 @@ public class Worker extends Thread{
 			Elements aElements = doc.select("a");
 			for (Element a : aElements) {
 				if(a.absUrl("href") != "") {
-					writeToFile(parseLink(a.absUrl("href")), writerLink);
+					writeStringToFile(parseLink(a.absUrl("href")), writerLink);
 				}	
 			}
 			
 			// text from body
-			writeToFile(doc.body().text(), writerData);
+			writeStringToFile(doc.body().text(), writerData);
 			
 			/*
 			 * Process data
@@ -394,7 +438,10 @@ public class Worker extends Thread{
 		closeFile(writerLink);
 	}
 	
-	// Process a text file (.txt extension)
+	/**
+	 * Process a text file (.txt extension)
+	 * @param _path
+	 */
 	private void processTextFile(String _path) {
 		StringBuffer stringBuffer = new StringBuffer();
 		String line = null;
@@ -430,25 +477,22 @@ public class Worker extends Thread{
 		closeFile(reader);
 	}
 
-	/*
-	 * Indexing
+	/**
+	 * Indexes the files in the queue
+	 * @param files
 	 */
-	// Indexes the files in the queue
-	public void indexFiles(Queue<String> files, int _limitLinks) {
-		int limit = 0;
-
+	public void indexFiles(Queue<String> files) {
 		log("> Building direct index with " + files.size() + " text documents", true);
 		
-		while(!files.isEmpty() && (limit < _limitLinks || _limitLinks == 0)) {
+		while(!files.isEmpty()) {
 		  String element = files.poll();
-      	
 		  processTextFile(element);
-		  
-		  limit++;
 		}
 	}
 	
-	// Create the inverse index from the direct indexing
+	/**
+	 * Create the inverse index from the direct indexing
+	 */
 	public void inverseIndex() {
 		log("> Building inverse index", true);
 		
@@ -468,12 +512,10 @@ public class Worker extends Thread{
             }
 		}
 	}
-
-	/*
-	 * Functions for vectorial Search
-	 */
 	
-	// calculate tf for documents
+	/**
+	 * Calculate tf for documents
+	 */
 	public void calculateTfForDocs() {
 		for (String doc: docKeys.keySet()) {
             String key = doc.toString();
@@ -482,54 +524,66 @@ public class Worker extends Thread{
 		} 
 	}
 	
-	// show tf for documents
+	/**
+	 * Show tf for documents
+	 */
 	private void showTfForDocs() {
 		log("> Showing tf for documents: ", false);
 		for (String doc: docKeys.keySet()) {
             String key = doc.toString();
-            IndexWords value = docKeys.get(doc);  
+            IndexWords value = docKeys.get(doc);
             log("< " + key + ", ", false);
             value.showTf();
             log(" >", true);
 		} 
 	}	
 	
-	// show the hash map containing the search results
-	private void showResults(HashMap<String, Double> hash_map) {
-		Map<String, Double> hm = sortByValue(hash_map); 
-		  
-        // print the sorted hashmap 
-        for (Map.Entry<String, Double> en : hm.entrySet()) { 
-            log(" - Document: " + en.getKey() + " [" + en.getValue() + "]", true); 
-        } 
+	/**
+	 * Write tf to file
+	 */
+	private void writeTfToFile() {
+		log("> Writing tf to file", true);
+		
+		JSONArray docsJson = new JSONArray();
+		
+		for (String doc: docKeys.keySet()) {
+			
+            String key = doc.toString();
+            IndexWords value = docKeys.get(doc);
+            
+            HashMap<String, Double> termTf = value.getTf(); 
+            
+            JSONArray terms = new JSONArray();
+            
+            for (String word: termTf.keySet()) {
+            	JSONObject term = new JSONObject();
+            	term.put("k", word.toString());
+            	term.put("tf", termTf.get(word));
+            	
+            	terms.add(term);
+    		} 
+            
+            JSONObject docName = new JSONObject();
+            docName.put("doc", key);
+            docName.put("terms", terms);
+            
+            docsJson.add(docName);
+		}
+		
+		//Write JSON file
+        try (FileWriter file = new FileWriter("files/tf/" + threadName + ".json")) {
+ 
+            file.write(docsJson.toJSONString());
+            file.flush();
+ 
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 	}
 	
-	// print to console sorted results
-	private static HashMap<String, Double> sortByValue(HashMap<String,Double> hm) 
-    { 
-        // Create a list from elements of HashMap 
-        List<Map.Entry<String, Double>> list = new LinkedList<Map.Entry<String, Double> >(hm.entrySet()); 
-  
-        // Sort the list 
-        Collections.sort(list, new Comparator<Map.Entry<String, Double> >() { 
-            public int compare(Map.Entry<String, Double> o1,  
-                               Map.Entry<String, Double> o2) 
-            { 
-                return -(o1.getValue()).compareTo(o2.getValue()); 
-            } 
-        }); 
-          
-        // put data from sorted list to hashmap  
-        HashMap<String, Double> temp = new LinkedHashMap<String, Double>(); 
-        for (Map.Entry<String, Double> aa : list) { 
-            temp.put(aa.getKey(), aa.getValue()); 
-        } 
-        return temp; 
-    } 
-	
-	/*
-	 * metoda returneaza idf pentru un anumit termen.
-	 * @param term : un termen dintr-un document
+	/**
+	 * Returns idf for a specified word
+	 * @param term : a word from a document
 	 */
 	public double getInverseDocumentFrequency(String term) {
 		if (wordLinks.containsKey(term)) {
@@ -542,6 +596,9 @@ public class Worker extends Thread{
 		}
 	}
 	
+	/**
+	 * Calculates the idf for the words
+	 */
 	public void calculateIdf() {
 		for (String doc: wordLinks.keySet()) {
             String key = doc.toString();
@@ -557,6 +614,9 @@ public class Worker extends Thread{
 		}
 	}
 	
+	/**
+	 * Show calculated IDF for terms
+	 */
 	public void showIdfForTerms() {
 		int nr = 0;
 		
@@ -575,65 +635,77 @@ public class Worker extends Thread{
 		log(">", true);
 	}
 	
-	public double cosineSimilarity(double A, double B) {
-    	double sumProduct = 0;
-    	double sumASq = 0;
-    	double sumBSq = 0;
-    	
-    	sumProduct += A * B;
-    	sumASq += A * A;
-    	sumBSq += B * B;
-    	
-    	if (sumASq == 0 && sumBSq == 0) {
-    		return 0;
-    	}
-    	return sumProduct / (Math.sqrt(sumASq) * Math.sqrt(sumBSq));
-    }
-	
-	public double cosineSimilarity(ArrayList<Double> A, ArrayList<Double> B) {
-    	if (A == null || B == null || A.size() == 0 || B.size() == 0 || A.size() != B.size()) {
-    		return 0;
-    	}
+	/**
+	 * Write IDF values of words to file in JSON format
+	 */
+	public void writeIdfToFile() {
+		log("> Writing idf to file", true);
+		
+		JSONArray termsArray = new JSONArray();
+		
+		for (String doc: idf.keySet()) {
+            JSONObject termName = new JSONObject();
+            termName.put("k", doc.toString());
+            termName.put("i", idf.get(doc));
+            
+            termsArray.add(termName);
+		}
+		
+		JSONObject termsJson = new JSONObject();
+        termsJson.put("terms", termsArray);
+		
+		// Write JSON file
+        try (FileWriter file = new FileWriter("files/idf/" + threadName + ".json")) {
+            file.write(termsJson.toJSONString());
+            file.flush(); 
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+	}
 
-    	double sumProduct = 0;
-    	double sumASq = 0;
-    	double sumBSq = 0;
-    	for (int i = 0; i < A.size(); i++) {
-    		sumProduct += A.get(i) * B.get(i);
-    		sumASq += A.get(i) * A.get(i);
-    		sumBSq += B.get(i) * B.get(i);
-    	}
-    	if (sumASq == 0 && sumBSq == 0) {
-    		return 0;
-    	}
-    	return sumProduct / (Math.sqrt(sumASq) * Math.sqrt(sumBSq));
-    }
+	/**
+	 * Get the thread object
+	 * @return thread
+	 */
+	public Thread getThread() {
+		return t;
+	}	
 	
-	@Override
+	/*
+	 * Run method (non-Javadoc)
+	 * @see java.lang.Thread#run()
+	 */
 	public void run() {
-      log("> Running " +  threadName, true);
+		log("> Running " +  threadName, true);
 
-      this.indexFiles(files, links);
-	  //parser.showDirectIndex();
+		this.indexFiles(filesQueue);
+		// this.showDirectIndex();
 		
-	  this.calculateTfForDocs();
-	  //parser.showTfForDocs();
+		this.calculateTfForDocs();
+		// this.showTfForDocs();
+		this.writeTfToFile();	  
 		
-	  this.inverseIndex();
-	  //parser.showInverseIndex();
-	  this.writeInverseIndexToFile();		
+		this.inverseIndex();
+		// this.showInverseIndex();
+		this.writeInverseIndexToFile();		
 		
-	  this.calculateIdf();
-	  //parser.showIdfForTerms();
-
-      System.out.println("> Thread " +  threadName + " exiting.");
-   }
+		this.calculateIdf();
+		// this.showIdfForTerms();
+		this.writeIdfToFile();
+		
+		System.out.println("> Thread " +  threadName + " exiting");
+	}
 	
+	/*
+	 * Start method (non-Javadoc)
+	 * @see java.lang.Thread#start()
+	 */
 	public void start () {
-      log("> Starting " +  threadName, true);
-      if (t == null) {
-         t = new Thread (this, threadName);
-         t.start ();
-      }
+		log("> Starting " +  threadName, true);
+		
+		if (t == null) {
+			t = new Thread (this, threadName);
+			t.start ();
+		}
    }
 }
