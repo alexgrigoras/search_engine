@@ -6,6 +6,7 @@ import org.bson.Document;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import static com.mongodb.client.model.Filters.*;
 
 public class mongo_test {
 
@@ -20,8 +21,14 @@ public class mongo_test {
 		
 		collection.insertOne(doc);
 		
-		//Document myDoc = collection.find(eq("i", 71)).first();
-		//System.out.println(myDoc.toJson());
+		Document myDoc = collection.find(eq("i", 71)).first();
+		try {
+			System.out.println(myDoc.toJson());
+		}
+		catch(NullPointerException ex) {
+			System.out.println("Error: " + ex.getMessage());
+		}
+		
 	}
 
 }
