@@ -1,16 +1,13 @@
 /**
  * @title Search engine application
  * @author Alexandru Grigoras
- * @version 3.0 
+ * @version 4.0 
  */
 
 package riw;
 
 import java.util.HashMap;
 
-/**
- * 
- */
 public class IndexWords {
 	private HashMap<String, Integer> indWords = null;				// hash set with words
 	private HashMap<String, Double> tf = null;
@@ -38,7 +35,6 @@ public class IndexWords {
 	{
 		return indWords.containsKey(_text);
 	}
-	
 	
 	// displays the hash table
 	public void showHash() {
@@ -103,4 +99,8 @@ public class IndexWords {
 		return indWords.size();
 	}
 
+	// returns the tf hashmap
+	public HashMap<String, Double> getTf() {
+		return tf;
+	}
 }

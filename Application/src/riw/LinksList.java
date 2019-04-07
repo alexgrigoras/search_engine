@@ -1,16 +1,13 @@
 /**
  * @title Search engine application
  * @author Alexandru Grigoras
- * @version 3.0 
+ * @version 4.0 
  */
 
 package riw;
 
 import java.util.ArrayList;
 
-/**
- * 
- */
 class Link {
 	private String link;
 	private int frequency;
