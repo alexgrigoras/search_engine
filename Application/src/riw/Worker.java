@@ -6,15 +6,20 @@
 
 package riw;
 
+import static com.mongodb.client.model.Filters.eq;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Properties;
 import java.util.Queue;
 
 import org.bson.Document;
@@ -360,7 +365,7 @@ public class Worker extends Thread{
 		}
 		
 		//Write JSON file
-        try (FileWriter file = new FileWriter("files/indexes/" + threadName + ".json")) {
+        try (FileWriter file = new FileWriter(".files/indexes/" + threadName + ".json")) {
  
             file.write(wordsJson.toJSONString());
             file.flush();
@@ -394,7 +399,20 @@ public class Worker extends Thread{
             Document docum = new Document("term", key)
             		.append("docs", documents);
     		
-    		dm.insertDoc(docum);
+            Document searchedDoc = dm.collection.find(eq("term", key)).first();
+    		try {
+    			List<Document> foundDoc = (List<Document>)searchedDoc.get("docs");
+    			
+    			foundDoc.addAll(documents);
+    			
+    			Document newDocument = new Document("term", key)
+    					.append("docs", foundDoc);
+    			
+    			dm.collection.updateOne(eq("term", key), new Document("$set", newDocument));
+    		}
+    		catch(NullPointerException ex) {
+    			dm.insertDoc(docum);
+    		}
 		}
 	}
 
@@ -640,9 +658,57 @@ public class Worker extends Thread{
 	 */
 	public void run() {
 		log("> Running " +  threadName, true);
+		
+		// read config file
+				Properties prop = new Properties();
+				InputStream input = null;
+				String storeProp = new String();
+				boolean createIndexProp = false;
+				boolean showValuesProp = false;
+				StoreType st = null;
 
-		this.indexFiles(filesQueue);
+				try {		
+					input = new FileInputStream("./files/config/config.properties");
+
+					// load a properties file
+					prop.load(input);
+					
+					storeProp = prop.getProperty("store");
+					createIndexProp = Boolean.parseBoolean(prop.getProperty("create_index"));
+					showValuesProp = Boolean.parseBoolean(prop.getProperty("show_values"));
+
+					// get the property value and print it out
+					if (storeProp.equals("files")) {
+						st = StoreType.FILES;
+					}
+					else if (storeProp.equals("database")) {
+						st = StoreType.DATABASE;
+					}
+					else {
+						log("> Invalid config file property: store", true);
+						System.exit(0); 
+					}
+				} catch (IOException ex) {
+					ex.printStackTrace();
+				} finally {
+					if (input != null) {
+						try {
+							input.close();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+
+		if(createIndexProp == true) {
+			this.indexFiles(filesQueue);
+			this.calculateTfForDocs();
+			this.inverseIndex();
+		}
+
+		// show direct index, inverse index and tf for each thread
 		// this.showDirectIndex();
+<<<<<<< HEAD
 		
 		this.calculateTfForDocs();
 		// this.showTfForDocs();
@@ -650,9 +716,24 @@ public class Worker extends Thread{
 		// this.storeTfToDB();
 		
 		this.inverseIndex();
+=======
+>>>>>>> branch 'final_extra' of https://grigorasalex@bitbucket.org/grigorasalex/search_engine.git
 		// this.showInverseIndex();
+<<<<<<< HEAD
 		// this.writeInverseIndexToFile();
 		// this.storeInverseIndexToDB();
+=======
+		// this.showTfForDocs();
+		
+		if(st == StoreType.FILES) {
+			this.writeInverseIndexToFile();
+			this.writeTfToFile();
+		}
+		else if(st == StoreType.DATABASE) {
+			this.storeInverseIndexToDB();
+			this.storeTfToDB();
+		}	
+>>>>>>> branch 'final_extra' of https://grigorasalex@bitbucket.org/grigorasalex/search_engine.git
 		
 		System.out.println("> Thread " +  threadName + " exiting");
 	}

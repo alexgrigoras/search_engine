@@ -17,6 +17,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 
 public class DatabaseModule {
@@ -61,29 +62,16 @@ public class DatabaseModule {
 	}
 
 	public static void main(String[] args) {
-		DatabaseModule dm = new DatabaseModule("tf_values");
+		// Testing the module
+		DatabaseModule dm = new DatabaseModule("inverse_index_values");
+
+		Document myDoc = dm.collection.find(eq("term", "appl")).first();
+
+		List<Document> links = (List<Document>) myDoc.get("docs");
 		
-		/*
-		List<Document> documents = new ArrayList<Document>();
-		for (int i = 0; i < 100; i++) {
-		    documents.add(new Document("i", i));
+		for (Document link : links) {
+			System.out.println(link.get("d"));
+			System.out.println(link.get("c"));
 		}
-		
-		Document docum = new Document("doc", "abc")
-				.append("terms", documents);
-		
-		dm.insertDoc(docum);
-		*/		
-
-		BasicDBObject criteria = new BasicDBObject();
-		criteria.append("doc", "E:\\Facultate\\Anul IV - Facultate\\Semestrul I\\ALPD - Algoritmi paraleli si distribuiti\\Tema de casa\\test-files\\test-files\\2.txt");
-		criteria.append("k", "cancel");
-				
-		Document myDoc = dm.collection.find(criteria).first();
-		System.out.println(myDoc.get("tf"));
-
-		//Document myDoc = collection.find().first();
-		//System.out.println(myDoc.toJson());
 	}
-
 }
