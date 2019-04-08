@@ -105,19 +105,10 @@ public class LinksList {
 		return list_strings;
 	}
 	
-	public void show() {
-		int nr = 0;
-		
-        System.out.print("{ ");  
+	public void show() {		  
         for(Link l: list_strings) {
-        	nr++;
-        	System.out.print(l.toString());
-            if(list_strings.size() > nr )
-            {
-            	System.out.print(", ");
-            }           
+        	System.out.println(" - Document: " + l.toString());      
         }
-        System.out.print(" }");
 	}
 
 	public int size() {
