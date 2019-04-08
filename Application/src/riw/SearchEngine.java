@@ -1345,6 +1345,10 @@ public class SearchEngine {
 		// get the start time
 		long startTime = System.nanoTime();
 		
+		if(se.st == StoreType.DATABASE) {
+			se.initializeDB();
+		}
+		
 		// build the direct and inverse indexes
 		if(createIndexProp == true) {
 			se.buildIndex();
