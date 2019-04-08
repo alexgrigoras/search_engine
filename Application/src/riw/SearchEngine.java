@@ -8,9 +8,11 @@ package riw;
 
 import static com.mongodb.client.model.Filters.eq;
 
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -20,6 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Queue;
 import java.util.Scanner;
 
@@ -32,6 +35,15 @@ import org.json.simple.parser.*;
 
 import com.mongodb.BasicDBObject;
 
+/**
+ * Enumeration for storing types of the indexes, tf and idf
+ *
+ */
+enum StoreType { 
+    FILES,
+    DATABASE
+}
+
 public class SearchEngine {
 	/**
 	 * Variables
@@ -41,7 +53,9 @@ public class SearchEngine {
 	private HashMap<String, LinksList> wordLinks;			// global inverse indexing
 	private HashMap<String, Double> idf;					// global idf
 	private HashMap<String, WordTf> tf;						// global tf
-	DatabaseModule dm;
+	private DatabaseModule dm;								// module for storing or reading the database
+	private StoreType st;									// storing type
+	private int number_of_threads;							// number of threads to be used as workers
 	
 	/**
 	 * Class constructor
@@ -52,6 +66,12 @@ public class SearchEngine {
 		wordLinks = new HashMap<String, LinksList>();
 		idf = new HashMap<String, Double>();
 		tf = new HashMap<String, WordTf>();
+	}
+	
+	/**
+	 * Initialize the database module
+	 */
+	private void initializeDB() {
 		dm = new DatabaseModule();
 	}
 	
@@ -190,11 +210,11 @@ public class SearchEngine {
 	}
 	
 	/**
-	 * Get the documents for a specified word
-	 * @param _word: word to be searched
-	 * @return a list with documents
+	 * Get the documents for a specified word from hash
+	 * @param _word
+	 * @return
 	 */
-	private LinksList getWordLocations(String _word) {
+	private LinksList getWordLocationsHash(String _word) {
 		LinksList list = null;
 		if(wordLinks.containsKey(_word)) {
 			list = wordLinks.get(_word);
@@ -203,6 +223,47 @@ public class SearchEngine {
 		else {
 			return null;
 		}		
+	}
+	
+	/**
+	 * Get the documents for a specified word from database
+	 * @param _word
+	 * @return
+	 */
+	private LinksList getWordLocationsDB(String _word) {
+		dm.setCollection("inverse_index_values");
+		
+		LinksList list = new LinksList();
+		
+		try {
+			Document myDoc = dm.collection.find(eq("term", _word)).first();
+			
+			List<Document> links = (List<Document>) myDoc.get("docs");
+			
+			for (Document link : links) {
+				Link l = new Link((String)link.get("d"), (int)link.get("c"));
+				list.addLink(l);
+			}
+			
+			return list;
+		}
+		catch (NullPointerException e) {
+			return null;
+		}
+	}
+	
+	/**
+	 * Get the documents for a specified word
+	 * @param _word: word to be searched
+	 * @return a list with documents
+	 */
+	private LinksList getWordLocations(String _word) {
+		if (st == StoreType.FILES) {
+			return getWordLocationsHash(_word);
+		}
+		else {
+			return getWordLocationsDB(_word);
+		}
 	}
 	
 	/**
@@ -331,10 +392,13 @@ public class SearchEngine {
 			}
 			else if(list_dimension == 1) {
 				String word = kw_list.get(0).getWord();
-				
-				log(word + " -> ", false);
-				
+
 				LinksList list = getWordLocations(word);
+				
+				log(word + " has ", false);
+				log(list.size(), false);
+				log(" results: ", true);
+				
 				list.show();
 			}
 			else {
@@ -474,7 +538,9 @@ public class SearchEngine {
 					}				
 				}
 				
-				log(words_ops + " -> ", false);
+				log(words_ops + " has ", false);
+				log(words_list.size(), false);
+				log(" results: ", true);
 				
 				if(words_list.size() == 0) {
 					log("No results!", false);
@@ -575,7 +641,7 @@ public class SearchEngine {
 	 */
 	public void getTf() {
 		FileExplorer fileExp = new FileExplorer("json");		// file explorer object
-		String directory = "files/tf/";							// directory to search indexes
+		String directory = "./files/tf/";							// directory to search indexes
 		Queue<String> files;									// queue with file names and paths
 		
 		fileExp.searchFiles(directory, 0, 0);
@@ -690,8 +756,12 @@ public class SearchEngine {
 	 * @return
 	 */
 	public double getTfVal(String _doc, String _term) {
-		return getTfValHash(_doc, _term);
-		//return getTfValDB(_doc, _term);
+		if (st == StoreType.FILES) {
+			return getTfValHash(_doc, _term);
+		}
+		else {
+			return getTfValDB(_doc, _term);
+		}
 	}
 	
 	/**
@@ -745,8 +815,12 @@ public class SearchEngine {
 	 * @return the idf value
 	 */
 	public double getIdfVal(String term) {
-		// return getIdfValHash(term);
-		return getIdfValDB(term);
+		if (st == StoreType.FILES) {
+			return getIdfValHash(term);
+		}
+		else {
+			return getIdfValDB(term);
+		}
 	}
 	
 	/**
@@ -808,7 +882,7 @@ public class SearchEngine {
         termsJson.put("terms", termsArray);
 		
 		// Write JSON file
-        try (FileWriter file = new FileWriter("files/idf/global_idf.json")) {
+        try (FileWriter file = new FileWriter("./files/idf/global_idf.json")) {
             file.write(termsJson.toJSONString());
             file.flush(); 
         } catch (IOException e) {
@@ -839,7 +913,7 @@ public class SearchEngine {
 	 */
 	public void getIdf() {
 		FileExplorer fileExp = new FileExplorer("json");		// file explorer object
-		String directory = "files/idf/";						// directory to search indexes
+		String directory = "./files/idf/";						// directory to search indexes
 		Queue<String> files;									// queue with file names and paths
 		
 		fileExp.searchFiles(directory, 0, 0);
@@ -903,7 +977,7 @@ public class SearchEngine {
 			ArrayList<Double> vector = new ArrayList<Double>();
 			vector = calculateQueryVector(kw_list);
 			
-			log("> ", false);			
+			log("> Searched keywords: ", false);			
 			
 			if(list_dimension == 0) {
 				log("Nothing typed!", false);
@@ -1081,7 +1155,7 @@ public class SearchEngine {
 		Queue<String> files;								// queue with file names and paths
 		int level = 0;										// how many levels to search recursively
 		int links = 0;										// limit the number of links from the queue
-		int nr_threads = 5;									// number of threads
+		int nr_threads = number_of_threads;					// number of threads
 		
 		//parser.log("> Type the selected directory: ", false);
 		//directory = parser.readKeywords();
@@ -1144,13 +1218,12 @@ public class SearchEngine {
 		log("> Threads finished", true);
 	}
 	
-
 	/**
 	 * Merge the created indexes from each thread
 	 */
 	public void mergeIndexes() {
 		FileExplorer fileExp = new FileExplorer("json");		// file explorer object
-		String directory = "files/indexes/";					// directory to search indexes
+		String directory = "./files/indexes/";					// directory to search indexes
 		Queue<String> files;								// queue with file names and paths
 		
 		fileExp.searchFiles(directory, 0, 0);
@@ -1199,31 +1272,132 @@ public class SearchEngine {
 
 		}
 	}
-	
-	
+		
 	/**
 	 * Main function
 	 * @param args: arguments from command line
 	 */
 	public static void main(String[] args) {
+		// class instance
 		SearchEngine se = new SearchEngine();
+		
+		// read config file
+		Properties prop = new Properties();
+		InputStream input = null;
+		String storeProp = new String();
+		String nrThreadsProp = new String();
+		String searchTypeProp = new String();
+		boolean createIndexProp = false;
+		boolean showValuesProp = false;
 
+		try {
+			log("> Reading config file properties:", true);
+			
+			input = new FileInputStream("./files/config/config.properties");
+
+			// load a properties file
+			prop.load(input);
+			
+			storeProp = prop.getProperty("store");
+			nrThreadsProp = prop.getProperty("nr_threads");
+			searchTypeProp = prop.getProperty("search_type");
+			createIndexProp = Boolean.parseBoolean(prop.getProperty("create_index"));
+			showValuesProp = Boolean.parseBoolean(prop.getProperty("show_values"));
+			
+			System.out.println("\t- store=" + storeProp);
+			System.out.println("\t- nr_threads=" + nrThreadsProp);
+			System.out.println("\t- search_type=" + searchTypeProp);
+			System.out.println("\t- create_index=" + createIndexProp);
+			System.out.println("\t- show_values=" + showValuesProp);
+
+			// get the property value and print it out
+			if (storeProp.equals("files")) {
+				se.st = StoreType.FILES;
+			}
+			else if (storeProp.equals("database")) {
+				se.st = StoreType.DATABASE;
+			}
+			else {
+				log("> Invalid config file property: store", true);
+				System.exit(0); 
+			}
+			
+			se.number_of_threads = Integer.parseInt(nrThreadsProp);
+			if (se.number_of_threads < 1 || se.number_of_threads > 32) {
+				log("> Invalid config file property: nr_threads (too many threads or not enough threads)", true);
+				System.exit(0);
+			}
+			
+			if(!searchTypeProp.equals("boolean") && !searchTypeProp.equals("vectorial")) {
+				log("> Invalid config file property: store_type", true);
+				System.exit(0);
+			}
+
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		} finally {
+			if (input != null) {
+				try {
+					input.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		// get the start time
 		long startTime = System.nanoTime();
 		
-		//se.buildIndex();
+		// initialize mongoDB database connection
+		if(se.st == StoreType.DATABASE) {
+			se.initializeDB();
+		}
 		
-		se.mergeIndexes();
-		// se.showInverseIndex();
+		// build the direct and inverse indexes
+		if(createIndexProp == true) {
+			se.buildIndex();
+		}		
+		// get the inverse indexes from files generated by threads
+		if(se.st == StoreType.FILES) {
+			se.mergeIndexes();
+		}		
+		// calculate the idf values
+		// build the direct and inverse indexes
+		if(createIndexProp == true) {
+			se.calculateIdf();
+		}
 		
-		// se.calculateIdf();
-		// se.writeIdfToFile();
-		// se.storeIdfToDB();
+				
+		// write idf values to file/database
+		if(createIndexProp == true) {
+			if(se.st == StoreType.FILES) {
+				se.writeIdfToFile();
+			}
+			else if(se.st == StoreType.DATABASE) {
+				se.storeIdfToDB();
+			}
+		}
 		
-		se.getIdf();
-		// se.showIdfForTerms();
+		if(showValuesProp == true) {
+			se.showInverseIndex();
+		}
 		
-		se.getTf();
-		// se.showTf();
+		// read the idf values from file
+		if(se.st == StoreType.FILES) {
+			se.getIdf();
+			
+			if(showValuesProp == true) {
+				se.showIdfForTerms();
+			}
+		}		
+		// read the tf values from file
+		if(se.st == StoreType.FILES) {
+			se.getTf();
+			
+			if(showValuesProp == true) {
+				se.showTf();
+			}
+		}
 		
 		long endTime = System.nanoTime();
 
@@ -1233,8 +1407,13 @@ public class SearchEngine {
 		se.log("> Execution time in milliseconds : ", false);
 		se.log(timeElapsed / 1000000, true);
 		
-		// se.binarySearch();
-		se.vectorialSearch();
+		// search methods
+		if(searchTypeProp.equals("boolean")) {
+			se.binarySearch();
+		}
+		else if(searchTypeProp.equals("vectorial")) {
+			se.vectorialSearch();
+		}
 	}
 
 }
