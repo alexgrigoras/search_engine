@@ -708,21 +708,7 @@ public class Worker extends Thread{
 
 		// show direct index, inverse index and tf for each thread
 		// this.showDirectIndex();
-<<<<<<< HEAD
-		
-		this.calculateTfForDocs();
-		// this.showTfForDocs();
-		// this.writeTfToFile();
-		// this.storeTfToDB();
-		
-		this.inverseIndex();
-=======
->>>>>>> branch 'final_extra' of https://grigorasalex@bitbucket.org/grigorasalex/search_engine.git
-		// this.showInverseIndex();
-<<<<<<< HEAD
-		// this.writeInverseIndexToFile();
-		// this.storeInverseIndexToDB();
-=======
+		// this.showInverseIndex();d
 		// this.showTfForDocs();
 		
 		if(st == StoreType.FILES) {
@@ -732,8 +718,7 @@ public class Worker extends Thread{
 		else if(st == StoreType.DATABASE) {
 			this.storeInverseIndexToDB();
 			this.storeTfToDB();
-		}	
->>>>>>> branch 'final_extra' of https://grigorasalex@bitbucket.org/grigorasalex/search_engine.git
+		}
 		
 		System.out.println("> Thread " +  threadName + " exiting");
 	}

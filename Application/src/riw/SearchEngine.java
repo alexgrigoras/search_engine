@@ -1348,15 +1348,6 @@ public class SearchEngine {
 		// get the start time
 		long startTime = System.nanoTime();
 		
-<<<<<<< HEAD
-		// se.buildIndex();
-=======
-		// initialize mongoDB database connection
-		if(se.st == StoreType.DATABASE) {
-			se.initializeDB();
-		}
->>>>>>> branch 'final_extra' of https://grigorasalex@bitbucket.org/grigorasalex/search_engine.git
-		
 		// build the direct and inverse indexes
 		if(createIndexProp == true) {
 			se.buildIndex();
