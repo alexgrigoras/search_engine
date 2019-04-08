@@ -365,7 +365,7 @@ public class Worker extends Thread{
 		}
 		
 		//Write JSON file
-        try (FileWriter file = new FileWriter(".files/indexes/" + threadName + ".json")) {
+        try (FileWriter file = new FileWriter("./files/indexes/" + threadName + ".json")) {
  
             file.write(wordsJson.toJSONString());
             file.flush();
@@ -607,7 +607,7 @@ public class Worker extends Thread{
 		}
 		
 		//Write JSON file
-        try (FileWriter file = new FileWriter("files/tf/" + threadName + ".json")) {
+        try (FileWriter file = new FileWriter("./files/tf/" + threadName + ".json")) {
  
             file.write(docsJson.toJSONString());
             file.flush();
