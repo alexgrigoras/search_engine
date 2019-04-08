@@ -1157,11 +1157,8 @@ public class SearchEngine {
 		int links = 0;										// limit the number of links from the queue
 		int nr_threads = number_of_threads;					// number of threads
 		
-		//parser.log("> Type the selected directory: ", false);
-		//directory = parser.readKeywords();
-		
-		directory = "D:\\Facultate\\Anul 4\\Semestrul I\\ALPD\\Tema de casa\\test_files";
-		// directory = "E:\\Facultate\\Anul IV - Facultate\\Semestrul I\\ALPD - Algoritmi paraleli si distribuiti\\Tema de casa\\test-files\\test-files";
+		log("> Type the selected directory: ", false);
+		directory = readKeywords();
 		
 		log("> Getting files from folder: " + directory, true);
 				
