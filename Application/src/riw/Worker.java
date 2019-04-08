@@ -647,12 +647,12 @@ public class Worker extends Thread{
 		this.calculateTfForDocs();
 		// this.showTfForDocs();
 		// this.writeTfToFile();
-		this.storeTfToDB();
+		// this.storeTfToDB();
 		
 		this.inverseIndex();
 		// this.showInverseIndex();
 		// this.writeInverseIndexToFile();
-		//this.storeInverseIndexToDB();
+		// this.storeInverseIndexToDB();
 		
 		System.out.println("> Thread " +  threadName + " exiting");
 	}

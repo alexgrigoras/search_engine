@@ -1086,8 +1086,8 @@ public class SearchEngine {
 		//parser.log("> Type the selected directory: ", false);
 		//directory = parser.readKeywords();
 		
-		// directory = "D:\\Facultate\\Anul 4\\Semestrul I\\ALPD\\Tema de casa\\test_files";
-		directory = "E:\\Facultate\\Anul IV - Facultate\\Semestrul I\\ALPD - Algoritmi paraleli si distribuiti\\Tema de casa\\test-files\\test-files";
+		directory = "D:\\Facultate\\Anul 4\\Semestrul I\\ALPD\\Tema de casa\\test_files";
+		// directory = "E:\\Facultate\\Anul IV - Facultate\\Semestrul I\\ALPD - Algoritmi paraleli si distribuiti\\Tema de casa\\test-files\\test-files";
 		
 		log("> Getting files from folder: " + directory, true);
 				
@@ -1210,7 +1210,7 @@ public class SearchEngine {
 
 		long startTime = System.nanoTime();
 		
-		//se.buildIndex();
+		// se.buildIndex();
 		
 		se.mergeIndexes();
 		// se.showInverseIndex();
