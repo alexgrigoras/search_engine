@@ -29,6 +29,11 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+/**
+ * Worker class used for processing a group of files
+ * @author alex_
+ *
+ */
 public class Worker extends Thread{
 	/**
 	 * Variables

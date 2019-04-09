@@ -45,6 +45,11 @@ enum StoreType {
     DATABASE
 }
 
+/**
+ * Search engine class that is used for running the application
+ * @author alex_
+ *
+ */
 public class SearchEngine {
 	/**
 	 * Variables
