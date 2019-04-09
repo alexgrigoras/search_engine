@@ -73,5 +73,24 @@ public class DatabaseModule {
 			System.out.println(link.get("d"));
 			System.out.println(link.get("c"));
 		}
+		
+		LinksList list = new LinksList();
+		
+		MongoCursor<Document> cursor = dm.collection.find(eq("term", "illumin")).iterator();
+		try {
+			while (cursor.hasNext()) {
+				//System.out.println(cursor.next().get("docs"));
+				List<Document> linksDoc = (List<Document>) cursor.next().get("docs");
+				
+				for (Document link : linksDoc) {
+					Link l = new Link((String)link.get("d"), (int)link.get("c"));
+					list.addLink(l);
+					
+					System.out.println(l.toString());
+				}
+			}
+		} finally {
+		    cursor.close();
+		}
 	}
 }

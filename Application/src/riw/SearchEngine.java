@@ -34,6 +34,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.*;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.client.MongoCursor;
 
 /**
  * Enumeration for storing types of the indexes, tf and idf
@@ -235,21 +236,21 @@ public class SearchEngine {
 		
 		LinksList list = new LinksList();
 		
+		MongoCursor<Document> cursor = dm.collection.find(eq("term", _word)).iterator();
 		try {
-			Document myDoc = dm.collection.find(eq("term", _word)).first();
-			
-			List<Document> links = (List<Document>) myDoc.get("docs");
-			
-			for (Document link : links) {
-				Link l = new Link((String)link.get("d"), (int)link.get("c"));
-				list.addLink(l);
+			while (cursor.hasNext()) {
+				List<Document> links = (List<Document>) cursor.next().get("docs");
+				
+				for (Document link : links) {
+					Link l = new Link((String)link.get("d"), (int)link.get("c"));
+					list.addLink(l);
+				}
 			}
-			
-			return list;
+		} finally {
+			cursor.close();
 		}
-		catch (NullPointerException e) {
-			return null;
-		}
+		
+		return list;
 	}
 	
 	/**
@@ -894,7 +895,7 @@ public class SearchEngine {
 	 * Store IDF to mongoDB database
 	 */
 	public void storeIdfToDB() {
-		log("> Writing idf to file", true);
+		log("> Writing idf to DB", true);
 		
 		dm.setCollection("idf_values");
 		
@@ -1363,6 +1364,8 @@ public class SearchEngine {
 			se.calculateIdf();
 		}
 		
+		// read the idf values from file
+		se.getIdf();
 				
 		// write idf values to file/database
 		if(createIndexProp == true) {
@@ -1378,14 +1381,12 @@ public class SearchEngine {
 			se.showInverseIndex();
 		}
 		
-		// read the idf values from file
-		if(se.st == StoreType.FILES) {
-			se.getIdf();
-			
+		if(se.st == StoreType.DATABASE) {			
 			if(showValuesProp == true) {
 				se.showIdfForTerms();
 			}
-		}		
+		}
+
 		// read the tf values from file
 		if(se.st == StoreType.FILES) {
 			se.getTf();
