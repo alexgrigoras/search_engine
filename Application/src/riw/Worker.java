@@ -399,20 +399,7 @@ public class Worker extends Thread{
             Document docum = new Document("term", key)
             		.append("docs", documents);
     		
-            Document searchedDoc = dm.collection.find(eq("term", key)).first();
-    		try {
-    			List<Document> foundDoc = (List<Document>)searchedDoc.get("docs");
-    			
-    			foundDoc.addAll(documents);
-    			
-    			Document newDocument = new Document("term", key)
-    					.append("docs", foundDoc);
-    			
-    			dm.collection.updateOne(eq("term", key), new Document("$set", newDocument));
-    		}
-    		catch(NullPointerException ex) {
-    			dm.insertDoc(docum);
-    		}
+            dm.insertDoc(docum);
 		}
 	}
 
