@@ -20,6 +20,11 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 
+/**
+ * Database module for connecting to the database
+ * @author alex_
+ *
+ */
 public class DatabaseModule {
 	private MongoClient mongoClient;
 	private MongoDatabase database;
