@@ -1407,7 +1407,7 @@ public class SearchEngine {
 		long timeElapsed = endTime - startTime;
 
 		se.log("> Execution time in milliseconds : ", false);
-		se.log(timeElapsed / 1000000, true);
+		se.log(timeElapsed / 1000000., true);
 		
 		// search methods
 		if(searchTypeProp.equals("boolean")) {
