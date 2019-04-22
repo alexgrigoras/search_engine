@@ -18,7 +18,7 @@ public class DnsClient {
     private String domain;						// URL address
     private String ipAddr;						// DNS Server IP address
 	private int dnsServerPort;					// DNS Server Port
-	private boolean logData; 
+	private boolean logData; 					// Log data flag
 
 	/**
 	 * Class constructor
