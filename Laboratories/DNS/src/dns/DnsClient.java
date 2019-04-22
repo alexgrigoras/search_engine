@@ -18,6 +18,7 @@ public class DnsClient {
     private String domain;						// URL address
     private String ipAddr;						// DNS Server IP address
 	private int dnsServerPort;					// DNS Server Port
+	private boolean logData; 
 
 	/**
 	 * Class constructor
@@ -25,16 +26,33 @@ public class DnsClient {
 	 * @param _ipAddr: DNS Server IP address
 	 * @param _dnsServerPort: DNS Server Port
 	 */
-    public DnsClient(String _domain, String _ipAddr, int _dnsServerPort) {
+    public DnsClient(String _domain, String _ipAddr, int _dnsServerPort, boolean _logData) {
         domain = _domain;
         ipAddr = _ipAddr;
         dnsServerPort = _dnsServerPort;
+        logData = _logData;
     }
     
+	/**
+	 * Log data to console for a string
+	 * @param msg: message to be written on the console
+	 * @param newLine: if true newline is added to the end; else nothing happens
+	 */
+	private void log(String msg, boolean newLine) {
+		if(logData) {
+			if(newLine) {
+				System.out.println(msg);
+	        }
+			else {
+				System.out.print(msg);
+			}
+		}
+	}
+	
     /**
      * Returns the IP address of a URL
-     * @return IP address
-     * @throws IOException
+     * @return IP address: the IP address of the site
+     * @throws IOException: exception thrown by the function
      */
     public String getIpAddres() throws IOException {
         InetAddress ipAddress = InetAddress.getByName(ipAddr);
@@ -53,9 +71,12 @@ public class DnsClient {
         dos.writeShort(0x0000);	        // Additional Record Count: Specifies the number of resource records in the Additional section of the message.
         // Question name
         String[] domainParts = domain.split("\\.");
-        System.out.print("URL: " + domain + " are " + domainParts.length + " parti: ");
+        log("> URL: \"" + domain + "\" are " + domainParts.length + " parti: ", false);
         for (int i = 0; i<domainParts.length; i++) {
-            System.out.print("[" + domainParts[i] + "] ");
+            log("[" + domainParts[i] + "]", false);
+            if(i<domainParts.length - 1) {
+            	log(", ", false);
+            }
             byte[] domainBytes = domainParts[i].getBytes("UTF-8");
             dos.writeByte(domainBytes.length);
             dos.write(domainBytes);
@@ -65,10 +86,10 @@ public class DnsClient {
         dos.writeShort(0x0001);			// QClass 0x01 = IN
 
         byte[] dnsFrame = baos.toByteArray();
-        System.out.println("\n\nTrimitere " + dnsFrame.length + " bytes:");
-        System.out.print("\t");
+        log("\n\n> Trimitere " + dnsFrame.length + " bytes:", true);
+        log("\t", false);
         for (int i=0; i< dnsFrame.length; i++) {
-            System.out.print("0x" + String.format("%x", dnsFrame[i]) + " " );
+            log("0x" + String.format("%x", dnsFrame[i]) + " ", false);
         }
 
         /*
@@ -86,53 +107,53 @@ public class DnsClient {
         socket.receive(packet);
         socket.close();
         
-        System.out.println("\n\nPrimire " + packet.getLength() + " bytes:");
-        System.out.print("\t");
+        log("\n\n< Primire " + packet.getLength() + " bytes:", true);
+        log("\t", false);
         for (int i = 0; i < packet.getLength(); i++) {
-            System.out.print("0x" + String.format("%x", buf[i]) + " ");
+            log("0x" + String.format("%x", buf[i]) + " ", false);
         }
-        System.out.println("\n");
+        log("\n", true);
         
         /*
          * Display record message
          */
-        System.out.println("Campuri mesaj primit: ");
+        log("< Campuri mesaj primit: ", true);
         DataInputStream din = new DataInputStream(new ByteArrayInputStream(buf));
-        System.out.println("\tIdentifier: 0x" + String.format("%x", din.readShort()));
-        System.out.println("\tFlags and codes: 0x" + String.format("%x", din.readShort()));
-        System.out.println("\tQuestion count: 0x" + String.format("%x", din.readShort()));
-        System.out.println("\tAnswer Record Count: 0x" + String.format("%x", din.readShort()));
-        System.out.println("\tName Server (Authority Record) Count: 0x" + String.format("%x", din.readShort()));
-        System.out.println("\tAdditional Record Count: 0x" + String.format("%x", din.readShort()));
-        System.out.print("\tQuestion name: ");
+        log("\tIdentifier: 0x" + String.format("%x", din.readShort()), true);
+        log("\tFlags and codes: 0x" + String.format("%x", din.readShort()), true);
+        log("\tQuestion count: 0x" + String.format("%x", din.readShort()), true);
+        log("\tAnswer Record Count: 0x" + String.format("%x", din.readShort()), true);
+        log("\tName Server (Authority Record) Count: 0x" + String.format("%x", din.readShort()), true);
+        log("\tAdditional Record Count: 0x" + String.format("%x", din.readShort()), true);
+        log("\tQuestion name: ", false);
         int recLen = 0;
         while ((recLen = din.readByte()) > 0) {
             byte[] record = new byte[recLen];
             for (int i = 0; i < recLen; i++) {
                 record[i] = din.readByte();
             }
-            System.out.print(new String(record, "UTF-8") + " ");
+            log(new String(record, "UTF-8") + " ", false);
         }
-        System.out.println("\n\tQType: 0x" + String.format("%x", din.readShort()));
-        System.out.println("\tQClass: 0x" + String.format("%x", din.readShort()));
-        System.out.println("\tName: 0x" + String.format("%x", din.readShort()));
-        System.out.println("\tType: 0x" + String.format("%x", din.readShort()));
-        System.out.println("\tClass: 0x" + String.format("%x", din.readShort()));
-        System.out.println("\tTTL: 0x" + String.format("%x", din.readInt()));
+        log("\n\tQType: 0x" + String.format("%x", din.readShort()), true);
+        log("\tQClass: 0x" + String.format("%x", din.readShort()), true);
+        log("\tName: 0x" + String.format("%x", din.readShort()), true);
+        log("\tType: 0x" + String.format("%x", din.readShort()), true);
+        log("\tClass: 0x" + String.format("%x", din.readShort()), true);
+        log("\tTTL: 0x" + String.format("%x", din.readInt()), true);
         short addrLen = din.readShort();
-        System.out.println("\tRDLenght: 0x" + String.format("%x", addrLen));
-        System.out.print("\tRData: ");
+        log("\tRDLenght: 0x" + String.format("%x", addrLen), true);
+        log("\tRData: ", false);
         StringBuilder ipAddres = new StringBuilder();
         for (int i = 0; i < addrLen; i++ ) {
         	int byteRead = din.readByte() & 0xFF;
-            System.out.print("" + String.format("%d", byteRead));
+            log("" + String.format("%d", byteRead), false);
             ipAddres.append(String.format("%d", byteRead));
             if(i < addrLen - 1) {
-            	System.out.print(".");
+            	log(".", false);
             	ipAddres.append(".");
             }
         }
-        System.out.println();
+        log("\n", true);
         
         return ipAddres.toString();
     }
@@ -145,8 +166,9 @@ public class DnsClient {
 		String domain = "www.google.com";
 		String ipAddress = "8.8.8.8";
 		int dnsServPort = 53;
+		boolean logDataFlag = true;
 		
-		DnsClient dnsClient = new DnsClient(domain, ipAddress, dnsServPort);
+		DnsClient dnsClient = new DnsClient(domain, ipAddress, dnsServPort, logDataFlag);
 		
         try {
 			ipAddress = dnsClient.getIpAddres();
@@ -154,7 +176,7 @@ public class DnsClient {
 			e.printStackTrace();
 		}
         
-        System.out.println("\nAdresa IP a domeniului: " + ipAddress);
+        System.out.println("> Adresa IP a domeniului: " + ipAddress);
 	}
 
 }
