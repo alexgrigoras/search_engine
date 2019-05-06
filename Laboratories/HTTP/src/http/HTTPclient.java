@@ -17,55 +17,26 @@ public class HTTPclient {
     	urlFormatter = _urlFormatter;
     }
     
-    private void buildHttpRequest(boolean isRobots) {
+    private void buildHttpRequest() {
         httpRequest = new StringBuilder();
-        // first line
-        httpRequest.append("GET ");
-        if (isRobots)
-            httpRequest.append("/robots.txt");
-        else
-            httpRequest.append(urlFormatter.get_localPathStr());
-        httpRequest.append(" HTTP/1.1\r\n");
 
-        // second line
+        httpRequest.append("GET ");
+        httpRequest.append(urlFormatter.get_localPathStr() + " ");
+        httpRequest.append("HTTP/1.1\r\n");
+
         httpRequest.append("Host: ");
         httpRequest.append(urlFormatter.get_domain());
         httpRequest.append("\r\n");
 
-        // third line
         httpRequest.append("User-Agent: CLIENTRIW\r\n");
 
-        // forth line
         httpRequest.append("Connection: close\r\n");
 
-        // fifth line
-        //_httpRequest.append("If-Modified-Since: "); // TO DO
-
-        // sixth line
         httpRequest.append("\r\n");
     }
 
-    public boolean checkForRobots() throws IOException {
-        buildHttpRequest(true);
-        Socket socket = new Socket(InetAddress.getByName(ipAddress), urlFormatter.get_port());
-
-        PrintWriter pw = new PrintWriter(socket.getOutputStream());
-        pw.print(httpRequest);
-        pw.flush();
-
-        BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
-        String line;
-        while ((line = br.readLine()) != null) {
-            if (line.contains("Disallow:"))
-                if (line.contains(urlFormatter.get_localPathStr()))
-                    return false;
-        }
-        return true;
-    }
-
     public boolean sendRequest() throws IOException {
-        buildHttpRequest(false);
+        buildHttpRequest();
         Socket socket = new Socket(InetAddress.getByName(ipAddress), urlFormatter.get_port());
 
         PrintWriter pw = new PrintWriter(socket.getOutputStream());
@@ -76,9 +47,10 @@ public class HTTPclient {
         String t = br.readLine();
         try {
             if (t.contains("HTTP/1.1 301 Moved Permanently")) {
+            	System.out.println("> 301");
                 nrOfRedirect++;
                 if (nrOfRedirect > 6) {
-                    throw new Exception("Too many redirects!");
+                    throw new CustomException("Too many redirects!");
                 }
                 t = br.readLine();
                 if (t.contains("Location")) {
@@ -100,15 +72,17 @@ public class HTTPclient {
                     }
 
                     if (index < separator.length()) {
-                        throw new Exception("Invalid Location Header!");
+                        throw new CustomException("Invalid Location Header!");
                     }
 
                     urlFormatter.set_domain(newLocation.toString());
                     return sendRequest();
-                }
+                }  
             } else if (!t.contains("HTTP/1.1 200 OK")) {
-                throw new Exception("Error request!");
+            	System.out.println("> not 200");
+                throw new CustomException("Error request!");
             } else {
+            	System.out.println("> 200");
                 boolean flag = false;
                 urlFormatter.buildFolderPath();
                 File output = new File(urlFormatter.get_domain() + urlFormatter.get_localPath() + "/" + urlFormatter.get_page());
@@ -126,7 +100,8 @@ public class HTTPclient {
             }
             br.close();
 
-        } catch (Exception e) {
+        } catch (CustomException e) {
+        	System.out.println("> error");
             File output = new File("error.txt");
             if (!output.exists())
                 output.createNewFile();
@@ -148,8 +123,8 @@ public class HTTPclient {
     }
 
 	public static void main(String[] args) {
-		String url = "http://tuiasi.ro";	//"http://riweb.tibeica.com/crawl";
-		String ipAddress = "81.180.223.1";
+		String url = "http://riweb.tibeica.com/crawl";	//"http://riweb.tibeica.com/crawl";
+		String ipAddress = "67.207.88.228";
 		
 		URLformatter processedURL;
 		try {
@@ -158,19 +133,19 @@ public class HTTPclient {
 			HTTPclient httpClient = new HTTPclient(processedURL, ipAddress);
 			
 			try {
-				if (!httpClient.sendRequest()) {
+				if (httpClient.sendRequest()) {
 					System.out.println("> Request sent successfully");
 				}
 				else {
 					System.out.println("> Invalid request");
 				}
 			} catch (IOException e) {
-				System.out.println("! Invalid request");
+				System.out.println(e.getMessage());
 			}
                 
 			
 		} catch (URISyntaxException e) {
-			System.out.println("! Invalid HTTP client");
+			System.out.println(e.getMessage());
 		}
 	}
 
