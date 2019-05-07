@@ -52,7 +52,7 @@ public class HTTPclient {
 	/**
 	 * Build the HTTP request with method, URL and headers
 	 */
-    private void buildHttpRequest() {
+    private void buildRequest() {
         httpRequest = new StringBuilder();
 
         httpRequest.append("GET ");
@@ -63,7 +63,7 @@ public class HTTPclient {
         httpRequest.append(urlFormatter.get_domain());
         httpRequest.append("\r\n");
 
-        httpRequest.append("User-Agent: CLIENTRIW\r\n");
+        httpRequest.append("User-Agent: CLIENT RIW\r\n");
 
         httpRequest.append("Connection: close\r\n");
 
@@ -78,8 +78,8 @@ public class HTTPclient {
      * @throws IOException
      */
     public boolean sendRequest() throws IOException {
-        buildHttpRequest();
-        Socket socket = new Socket(InetAddress.getByName(ipAddress), urlFormatter.get_port());
+        buildRequest();
+        Socket socket = new Socket(ipAddress, urlFormatter.get_port());
 
         PrintWriter pw = new PrintWriter(socket.getOutputStream());
         pw.print(httpRequest);
@@ -136,7 +136,7 @@ public class HTTPclient {
                 boolean flag = false;
                 urlFormatter.buildFolderPath();
                 
-                File output = new File(urlFormatter.get_filesFolder() + urlFormatter.get_domain() + urlFormatter.get_localPath() + "/" + urlFormatter.get_page());
+                File output = new File(urlFormatter.get_filesFolder() + urlFormatter.get_scheme() + urlFormatter.get_domain() + urlFormatter.get_localPath() + "/" + urlFormatter.get_page());
                 if (!output.exists())
                     output.createNewFile();
 
@@ -153,7 +153,7 @@ public class HTTPclient {
 
         } catch (Exception e) {
         	
-        	log("> Error written in error.txt", true);
+        	log("> Errors written in error.txt", true);
         	
             File output = new File("error.txt");
             if (!output.exists())

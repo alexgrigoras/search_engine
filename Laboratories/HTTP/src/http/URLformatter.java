@@ -14,6 +14,7 @@ import java.util.HashSet;
 public class URLformatter {
 	public static HashSet<String> _blockedPath = new HashSet<>();
     private String _localPathStr;
+    private String _scheme;
     private String _domain;
     private int _port;
     private String _localPath;
@@ -22,6 +23,7 @@ public class URLformatter {
 
     public URLformatter(String fullDomainName) throws URISyntaxException {
         URI uri = new URI(fullDomainName);
+        _scheme = uri.getScheme() + "/";
         _domain = uri.getHost();
         _domain = _domain.startsWith("www.") ? _domain.substring(4) : _domain;
 
@@ -60,7 +62,7 @@ public class URLformatter {
 
     public void buildFolderPath() {
         try {
-            Files.createDirectories(Paths.get("./" + filesFolder + _domain + _localPath));
+            Files.createDirectories(Paths.get("./" + filesFolder + _scheme + _domain + _localPath));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -82,6 +84,10 @@ public class URLformatter {
         return _domain;
     }
 
+    public String get_scheme() {
+    	return _scheme;
+    }
+    
     public int get_port() {
         return _port;
     }
