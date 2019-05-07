@@ -6,15 +6,19 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashSet;
-import java.util.Optional;
 
+/**
+ * URL Formatting class
+ *
+ */
 public class URLformatter {
 	public static HashSet<String> _blockedPath = new HashSet<>();
-    private  String _localPathStr;
+    private String _localPathStr;
     private String _domain;
     private int _port;
     private String _localPath;
     private String _page = "index.html";
+    private String filesFolder = "files/";
 
     public URLformatter(String fullDomainName) throws URISyntaxException {
         URI uri = new URI(fullDomainName);
@@ -56,7 +60,7 @@ public class URLformatter {
 
     public void buildFolderPath() {
         try {
-            Files.createDirectories(Paths.get("./" + _domain + _localPath));
+            Files.createDirectories(Paths.get("./" + filesFolder + _domain + _localPath));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -66,6 +70,10 @@ public class URLformatter {
         this._domain = _domain;
     }
 
+    public String get_filesFolder() {
+    	return filesFolder;
+    }
+    
     public String get_localPathStr() {
         return _localPathStr;
     }
