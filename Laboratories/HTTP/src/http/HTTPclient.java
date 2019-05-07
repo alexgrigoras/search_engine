@@ -1,22 +1,57 @@
 package http;
 
-import javax.xml.crypto.URIReferenceException;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.URISyntaxException;
 
+/**
+ * HTTP client class for sending requests to specified URL
+ *
+ */
 public class HTTPclient {
 	private String ipAddress;
     private URLformatter urlFormatter;
     private int nrOfRedirect = 0;
     private StringBuilder httpRequest;
+    private boolean logData;
     
-    public HTTPclient(URLformatter _urlFormatter, String _ipAdress) {
-    	ipAddress = _ipAdress;
-    	urlFormatter = _urlFormatter;
+    /**
+     * Class constructor
+     * @param _url: url address of site
+     * @param _ipAddress: ip address of site from dns
+     */
+    public HTTPclient(String _url, String _ipAddress, boolean _logData) {
+    	ipAddress = _ipAddress;
+
+		try {
+			urlFormatter = new URLformatter(_url);
+		} catch (URISyntaxException e) {
+			System.out.println(e.getMessage());
+		}
+		
+		logData = _logData;
     }
     
+    /**
+	 * Log data to console for a string
+	 * @param msg: message to be written on the console
+	 * @param newLine: if true newline is added to the end; else nothing happens
+	 */
+	private void log(String msg, boolean newLine) {
+		if(logData) {
+			if(newLine) {
+				System.out.println(msg);
+	        }
+			else {
+				System.out.print(msg);
+			}
+		}
+	}
+    
+	/**
+	 * Build the HTTP request with method, URL and headers
+	 */
     private void buildHttpRequest() {
         httpRequest = new StringBuilder();
 
@@ -33,8 +68,15 @@ public class HTTPclient {
         httpRequest.append("Connection: close\r\n");
 
         httpRequest.append("\r\n");
+        
+        log("> Building request:\n" + httpRequest.toString(), true);
     }
 
+    /**
+     * Send the request to the specified resource
+     * @return true for success or false for fail
+     * @throws IOException
+     */
     public boolean sendRequest() throws IOException {
         buildHttpRequest();
         Socket socket = new Socket(InetAddress.getByName(ipAddress), urlFormatter.get_port());
@@ -45,19 +87,23 @@ public class HTTPclient {
 
         BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         String t = br.readLine();
+        
+        log("> Response: " + t, true);
+        
         try {
             if (t.contains("HTTP/1.1 301 Moved Permanently")) {
-            	System.out.println("> 301");
+            	
+            	log("> Response code: 301", true);
+            	
                 nrOfRedirect++;
                 if (nrOfRedirect > 6) {
-                    throw new CustomException("Too many redirects!");
+                    throw new Exception("Too many redirects!");
                 }
                 t = br.readLine();
                 if (t.contains("Location")) {
                     final String separator = "://";
                     int index = 0;
                     StringBuilder newLocation = new StringBuilder();
-                    boolean flag = false;
                     for (Character c : t.toCharArray()) {
                         if (index > separator.length()) {
                             if (c.equals('/'))
@@ -72,20 +118,25 @@ public class HTTPclient {
                     }
 
                     if (index < separator.length()) {
-                        throw new CustomException("Invalid Location Header!");
+                        throw new Exception("Invalid Location Header!");
                     }
 
                     urlFormatter.set_domain(newLocation.toString());
                     return sendRequest();
                 }  
             } else if (!t.contains("HTTP/1.1 200 OK")) {
-            	System.out.println("> not 200");
-                throw new CustomException("Error request!");
+            	
+            	log("> Response code: not 200", true);
+            	
+                throw new Exception("Error request!");
             } else {
-            	System.out.println("> 200");
+            	
+            	log("> Response code: 200", true);
+            	
                 boolean flag = false;
                 urlFormatter.buildFolderPath();
-                File output = new File(urlFormatter.get_domain() + urlFormatter.get_localPath() + "/" + urlFormatter.get_page());
+                
+                File output = new File(urlFormatter.get_filesFolder() + urlFormatter.get_domain() + urlFormatter.get_localPath() + "/" + urlFormatter.get_page());
                 if (!output.exists())
                     output.createNewFile();
 
@@ -100,8 +151,10 @@ public class HTTPclient {
             }
             br.close();
 
-        } catch (CustomException e) {
-        	System.out.println("> error");
+        } catch (Exception e) {
+        	
+        	log("> Error written in error.txt", true);
+        	
             File output = new File("error.txt");
             if (!output.exists())
                 output.createNewFile();
@@ -117,34 +170,34 @@ public class HTTPclient {
                 writer.write(t + "\r\n");
             }
             writer.close();
+            
             return false;
         }
+        
         return true;
     }
 
+    /**
+     * Main function for testing
+     * @param args: arguments from command line
+     */
 	public static void main(String[] args) {
-		String url = "http://riweb.tibeica.com/crawl";	//"http://riweb.tibeica.com/crawl";
+		String url = "http://riweb.tibeica.com/crawl";
 		String ipAddress = "67.207.88.228";
+		boolean logData = true;
 		
-		URLformatter processedURL;
+		HTTPclient client = new HTTPclient(url, ipAddress, logData);
+		
+		client.log("> Making request for [" + url + "] with address [" + ipAddress + "]", true);
+		
 		try {
-			processedURL = new URLformatter(url);
-
-			HTTPclient httpClient = new HTTPclient(processedURL, ipAddress);
-			
-			try {
-				if (httpClient.sendRequest()) {
-					System.out.println("> Request sent successfully");
-				}
-				else {
-					System.out.println("> Invalid request");
-				}
-			} catch (IOException e) {
-				System.out.println(e.getMessage());
+			if (client.sendRequest()) {
+				System.out.println("> Request completed successfully");
 			}
-                
-			
-		} catch (URISyntaxException e) {
+			else {
+				System.out.println("> Request incomplete");
+			}
+		} catch (IOException e) {
 			System.out.println(e.getMessage());
 		}
 	}
