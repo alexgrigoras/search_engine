@@ -9,7 +9,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
-
 /**
  * DNS client for getting the IP address of a URL address
  * @author alex_

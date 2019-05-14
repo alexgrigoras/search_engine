@@ -56,11 +56,11 @@ public class HTTPclient {
         httpRequest = new StringBuilder();
 
         httpRequest.append("GET ");
-        httpRequest.append(urlFormatter.get_localPathStr() + " ");
+        httpRequest.append(urlFormatter.getLocalPathStr() + " ");
         httpRequest.append("HTTP/1.1\r\n");
 
         httpRequest.append("Host: ");
-        httpRequest.append(urlFormatter.get_domain());
+        httpRequest.append(urlFormatter.getDomain());
         httpRequest.append("\r\n");
 
         httpRequest.append("User-Agent: CLIENT RIW\r\n");
@@ -79,7 +79,7 @@ public class HTTPclient {
      */
     public boolean sendRequest() throws IOException {
         buildRequest();
-        Socket socket = new Socket(ipAddress, urlFormatter.get_port());
+        Socket socket = new Socket(ipAddress, urlFormatter.getPort());
 
         PrintWriter pw = new PrintWriter(socket.getOutputStream());
         pw.print(httpRequest);
@@ -121,7 +121,7 @@ public class HTTPclient {
                         throw new Exception("Invalid Location Header!");
                     }
 
-                    urlFormatter.set_domain(newLocation.toString());
+                    urlFormatter.setDomain(newLocation.toString());
                     return sendRequest();
                 }  
             } else if (!t.contains("HTTP/1.1 200 OK")) {
@@ -136,7 +136,7 @@ public class HTTPclient {
                 boolean flag = false;
                 urlFormatter.buildFolderPath();
                 
-                File output = new File(urlFormatter.get_filesFolder() + urlFormatter.get_scheme() + urlFormatter.get_domain() + urlFormatter.get_localPath() + "/" + urlFormatter.get_page());
+                File output = new File(urlFormatter.getFilesFolder() + urlFormatter.getScheme() + urlFormatter.getDomain() + urlFormatter.getLocalPath() + "/" + urlFormatter.getResource());
                 if (!output.exists())
                     output.createNewFile();
 

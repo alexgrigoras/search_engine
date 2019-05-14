@@ -3,8 +3,6 @@ package crawler;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import sun.rmi.runtime.Log;
-
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -19,35 +17,100 @@ import java.util.List;
 import java.util.Queue;
 import java.util.logging.Logger;
 
+/**
+ * Sequential Web Crawler for extracting html pages from a queue of URLs
+ * @author alex_
+ *
+ */
 public class SequentialCrawler {
     private static HashMap<String, String> _domanIp = new HashMap<>();
 
+	/**
+	 * Log data to console for a string
+	 * @param msg
+	 * @param newLine
+	 */
+	private static void log(String msg, boolean newLine) {
+		if(newLine) {
+			System.out.println(msg);
+        }
+		else {
+			System.out.print(msg);
+		}
+	}
+	
+	/**
+	 * Log data to console for an integer number
+	 * @param number
+	 * @param newLine
+	 */
+	private static void log(double number, boolean newLine) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(number);
+		if(newLine) {
+			System.out.println(sb.toString());
+        }
+		else {
+			System.out.print(sb.toString());
+		}
+	}
+    
+	/**
+	 * Parse the links and remove the fragment
+	 * @param str
+	 * @return
+	 */
+	private static String parseLink(String str) {
+		int i = 0;
+		boolean setFlag = true;
+		StringBuilder tempStr = new StringBuilder("");
+		
+		for(i=0; i<str.length() && setFlag;i++){
+			if(str.charAt(i) != '#'){
+				tempStr.append(str.charAt(i));
+			}
+			else 
+			{
+				setFlag = false;
+			}
+		}
+		
+		return tempStr.toString();
+	}
+	
     /**
      * Main function for Sequential Crawler
      * @param args
      */
     public static void main(String[] args) {
-    	
     	boolean logData = false;
+    	
+    	String startURL = "http://riweb.tibeica.com/crawl/";
 
         Queue<URLformatter> urlQueue = new LinkedList<>();
         try {
             int i = 0;
 
-            urlQueue.add(new URLformatter("http://riweb.tibeica.com/crawl/"));
+            urlQueue.add(new URLformatter(startURL));
+            
+            log("> Extragere resurse de la adresele: ", true);
+            log(" -> " + startURL, true);
+            
+            // get the start time
+    		long startTime = System.nanoTime();
 
             while (!urlQueue.isEmpty()) {
-                try {
+                try {                	
                     // get head of the queue to process
                 	URLformatter processedURL = urlQueue.peek();
                     urlQueue.remove();
 
-                    String fullDomainName = processedURL.get_fullDomainName();
-                    String scheme = processedURL.get_scheme();
-                    String domain = processedURL.get_domain();
-                    String localPath = processedURL.get_localPath();
-                    String page = processedURL.get_page();
-                    String filesFolder = processedURL.get_filesFolder();
+                    String fullDomainName = parseLink(processedURL.getFullDomainName());
+                    String scheme = processedURL.getScheme();
+                    String domain = processedURL.getDomain();
+                    String localPath = processedURL.getLocalPath();
+                    String page = processedURL.getResource();
+                    String filesFolder = processedURL.getFilesFolder();
                     String processedFilesFolder = "files/text/";
                     
                     if(!domain.equals("riweb.tibeica.com")) {
@@ -116,11 +179,23 @@ public class SequentialCrawler {
 
                     }
                     
-                    System.out.println("> Fisiere procesate: " + (++i) + " -> " + fullDomainName);
+                    i++;
+                    
+                    log(" -> " + fullDomainName, true);
                 } catch (URISyntaxException e) {
-                	System.out.println("! error on link -> " + e.getMessage());
+                	log("! error on link -> " + e.getMessage(), true);
                 }
             }
+            
+            log("> Fisiere procesate: " + i, true);
+            
+            long endTime = System.nanoTime();
+
+    		// get difference of two nanoTime values
+    		long timeElapsed = endTime - startTime;
+
+    		log("> Timpul de executie in milisecunde : ", false);
+    		log(timeElapsed / 1000000., true);
 
         } catch (URISyntaxException e) {
             e.printStackTrace();
