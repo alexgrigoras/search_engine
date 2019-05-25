@@ -144,7 +144,7 @@ public class DnsClient {
         log("\tRDLenght: 0x" + String.format("%x", addrLen), true);
         log("\tRData: ", false);
         StringBuilder ipAddres = new StringBuilder();
-        for (int i = 0; i < addrLen; i++ ) {
+        for (int i = addrLen-4; i < addrLen; i++ ) {
         	int byteRead = din.readByte() & 0xFF;
             log("" + String.format("%d", byteRead), false);
             ipAddres.append(String.format("%d", byteRead));
@@ -163,7 +163,7 @@ public class DnsClient {
      * @param args: arguments from the command line
      */
 	public static void main(String[] args) {
-		String domain = "www.riweb.tibeica.com";
+		String domain = "www.python.org";
 		String ipAddress = "8.8.8.8";
 		int dnsServPort = 53;
 		boolean logDataFlag = true;
