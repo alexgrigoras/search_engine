@@ -183,7 +183,7 @@ public class HTTPclient {
      */
 	public static void main(String[] args) {
 		String url = "http://riweb.tibeica.com/crawl";
-		String ipAddress = "67.207.88.228";
+		String ipAddress = "9.100.117.97";
 		boolean logData = true;
 		
 		HTTPclient client = new HTTPclient(url, ipAddress, logData);
