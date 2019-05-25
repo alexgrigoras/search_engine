@@ -142,7 +142,7 @@ public class HTTPclient {
                     }
 
                     if (index < separator.length()) {
-                        throw new Exception("Invalid Location Header!");
+                        throw new Exception("> Invalid Location Header!");
                     }
 
                     _urlFormatter.setDomain(newLocation.toString());
@@ -215,13 +215,27 @@ public class HTTPclient {
         pw.flush();
 
         BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
+        
         String line;
+        
+    	boolean currentCrawler = false;
+        
         while ((line = br.readLine()) != null) {
+        	if (line.contains("User-agent:")) {
+        		if(_userAgent.equals(line.substring(line.lastIndexOf(" ")+1))) {
+        			currentCrawler = true;
+        		}
+        		else {
+        			currentCrawler = false;
+        		}
+        	}
             if (line.contains("Disallow:")) {
-            	System.out.println("> robots: " + line);
-                if (line.contains(_urlFormatter.getLocalPathStr()))
-                    return false;
+            	if(currentCrawler) {
+            		if (line.contains("/"))
+            			return false;
+	                if (line.contains(_urlFormatter.getLocalPathStr()))
+	                    return false;
+            	}
             }
         }
         return true;
@@ -232,7 +246,7 @@ public class HTTPclient {
      * @param args: arguments from command line
      */
 	public static void main(String[] args) {
-		String url = "http://riweb.tibeica.com/crawl/inst-prerequisites.html";
+		String url = "http://riweb.tibeica.com/modpython.html";
 		String ipAddress = "67.207.88.228";
 		String userAgent = "RIWEB_CRAWLER";
 		boolean logData = true;
