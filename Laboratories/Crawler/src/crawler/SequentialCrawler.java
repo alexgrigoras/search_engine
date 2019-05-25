@@ -3,34 +3,33 @@ package crawler;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import sun.rmi.runtime.Log;
-
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.File;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.logging.Logger;
 
+/**
+ * Sequential crawler class for extracting html pages from specified domains 
+ * @author alex_
+ */
 public class SequentialCrawler {
     private static HashMap<String, String> _domanIp = new HashMap<>();
 
     /**
      * Main function for Sequential Crawler
-     * @param args
+     * @param args: arguments from the command line
      */
-    public static void main(String[] args) {
-    	
+    public static void main(String[] args) { 	
     	boolean logData = false;
-
         Queue<URLformatter> urlQueue = new LinkedList<>();
+        
         try {
             int i = 0;
 
@@ -69,7 +68,7 @@ public class SequentialCrawler {
 
                     HTTPclient httpClient = new HTTPclient(fullDomainName, ipAddress, logData);
                     if (!_domanIp.containsKey(domain)) {
-                        if (!httpClient.checkForRobosts()) {
+                        if (!httpClient.checkForRobots()) {
                         	System.out.println("! Robots disallow -> " + fullDomainName);
                             continue;
                         }
@@ -83,7 +82,7 @@ public class SequentialCrawler {
                     File htmlFile = new File(filesFolder + scheme + "/" + domain + localPath + "/" + page);
                     Document document = Jsoup.parse(htmlFile, null, "http://" + domain + localPath + "/");
 
-                    // extract text to certain file
+                    // extract text from body to certain file
                     String text = document.body().text();
 
                     Files.createDirectories(Paths.get(processedFilesFolder + scheme + "/" + domain + localPath + "/"));
@@ -113,7 +112,6 @@ public class SequentialCrawler {
                                     urlQueue.add(urlToAdd);
                             }
                         }
-
                     }
                     
                     System.out.println("> Fisiere procesate: " + (++i) + " -> " + fullDomainName);
