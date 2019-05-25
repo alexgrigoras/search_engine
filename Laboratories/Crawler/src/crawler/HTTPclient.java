@@ -23,27 +23,29 @@ enum RequestType {
  * 
  */
 public class HTTPclient {
-	private String ipAddress;
-    private URLformatter urlFormatter;
-    private int nrOfRedirect = 0;
-    private StringBuilder httpRequest;
-    private boolean logData;
+	private String _ipAddress;
+	private String _userAgent;
+    private URLformatter _urlFormatter;
+    private int _nrOfRedirect = 0;
+    private StringBuilder _httpRequest;
+    private boolean _logData;
     
     /**
      * Class constructor
      * @param _url: url address of site
      * @param _ipAddress: ip address of site from dns
      */
-    public HTTPclient(String _url, String _ipAddress, boolean _logData) {
-    	ipAddress = _ipAddress;
+    public HTTPclient(String url, String ipAddress, String userAgent, boolean logData) {
+    	_ipAddress = ipAddress;
+    	_userAgent = userAgent;
 
 		try {
-			urlFormatter = new URLformatter(_url);
+			_urlFormatter = new URLformatter(url);
 		} catch (URISyntaxException e) {
 			System.out.println(e.getMessage());
 		}
 		
-		logData = _logData;
+		_logData = logData;
     }
     
     /**
@@ -52,7 +54,7 @@ public class HTTPclient {
 	 * @param newLine: if true newline is added to the end; else nothing happens
 	 */
 	private void log(String msg, boolean newLine) {
-		if(logData) {
+		if(_logData) {
 			if(newLine) {
 				System.out.println(msg);
 	        }
@@ -66,32 +68,32 @@ public class HTTPclient {
 	 * Build the HTTP request with method, URL and headers
 	 */
 	private void buildRequest(RequestType type) {
-        httpRequest = new StringBuilder();
+        _httpRequest = new StringBuilder();
 
-        httpRequest.append("GET ");
+        _httpRequest.append("GET ");
         
         if (type == RequestType.Resource)
         {
-        	httpRequest.append(urlFormatter.getLocalPathStr() + " ");	
+        	_httpRequest.append(_urlFormatter.getLocalPathStr() + " ");	
         }
         else if (type == RequestType.Robots)
         {
-        	httpRequest.append("/robots.txt");
+        	_httpRequest.append("/robots.txt ");
         }        
         
-        httpRequest.append("HTTP/1.1\r\n");
+        _httpRequest.append("HTTP/1.1\r\n");
 
-        httpRequest.append("Host: ");
-        httpRequest.append(urlFormatter.getDomain());
-        httpRequest.append("\r\n");
+        _httpRequest.append("Host: ");
+        _httpRequest.append(_urlFormatter.getDomain());
+        _httpRequest.append("\r\n");
 
-        httpRequest.append("User-Agent: CLIENT RIW\r\n");
+        _httpRequest.append("User-Agent: " + _userAgent + "\r\n");
 
-        httpRequest.append("Connection: close\r\n");
+        _httpRequest.append("Connection: close\r\n");
 
-        httpRequest.append("\r\n");
+        _httpRequest.append("\r\n");
         
-        log("> Building request:\n" + httpRequest.toString(), true);
+        log("> Building request:\n" + _httpRequest.toString(), true);
     }
 
     /**
@@ -101,10 +103,10 @@ public class HTTPclient {
      */
     public boolean sendRequest() throws IOException {
     	buildRequest(RequestType.Resource);
-        Socket socket = new Socket(ipAddress, urlFormatter.getPort());
-
+        Socket socket = new Socket(_ipAddress, _urlFormatter.getPort());
         PrintWriter pw = new PrintWriter(socket.getOutputStream());
-        pw.print(httpRequest);
+        
+        pw.print(_httpRequest);
         pw.flush();
 
         BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -117,8 +119,8 @@ public class HTTPclient {
             	
             	log("> Response code: 301", true);
             	
-                nrOfRedirect++;
-                if (nrOfRedirect > 6) {
+                _nrOfRedirect++;
+                if (_nrOfRedirect > 6) {
                     throw new Exception("Too many redirects!");
                 }
                 t = br.readLine();
@@ -143,7 +145,7 @@ public class HTTPclient {
                         throw new Exception("Invalid Location Header!");
                     }
 
-                    urlFormatter.setDomain(newLocation.toString());
+                    _urlFormatter.setDomain(newLocation.toString());
                     return sendRequest();
                 }  
             } else if (!t.contains("HTTP/1.1 200 OK")) {
@@ -156,9 +158,9 @@ public class HTTPclient {
             	log("> Response code: 200", true);
             	
                 boolean flag = false;
-                urlFormatter.buildFolderPath();
+                _urlFormatter.buildFolderPath();
                 
-                File output = new File(urlFormatter.getFilesFolder() + urlFormatter.getScheme() + urlFormatter.getDomain() + urlFormatter.getLocalPath() + "/" + urlFormatter.getResource());
+                File output = new File(_urlFormatter.getFilesFolder() + _urlFormatter.getScheme() + _urlFormatter.getDomain() + _urlFormatter.getLocalPath() + "/" + _urlFormatter.getResource());
                 if (!output.exists())
                     output.createNewFile();
 
@@ -183,7 +185,7 @@ public class HTTPclient {
 
             BufferedWriter writer = new BufferedWriter(new FileWriter(output));
             writer.write(e.getMessage() + "\r\n\r\n");
-            writer.write(httpRequest.toString());
+            writer.write(_httpRequest.toString());
 
             writer.write(t + "\r\n");
             while ((t = br.readLine()) != null) {
@@ -205,20 +207,22 @@ public class HTTPclient {
      * @throws IOException
      */
     public boolean checkForRobots() throws IOException {
-    	buildRequest(RequestType.Robots);
-        Socket socket = new Socket(InetAddress.getByName(ipAddress), urlFormatter.getPort());
-
+    	buildRequest(RequestType.Robots);    	
+        Socket socket = new Socket(InetAddress.getByName(_ipAddress), _urlFormatter.getPort());
         PrintWriter pw = new PrintWriter(socket.getOutputStream());
-        pw.print(httpRequest);
+        
+        pw.print(_httpRequest);
         pw.flush();
 
         BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
         String line;
         while ((line = br.readLine()) != null) {
-            if (line.contains("Disallow:"))
-                if (line.contains(urlFormatter.getLocalPathStr()))
+            if (line.contains("Disallow:")) {
+            	System.out.println("> robots: " + line);
+                if (line.contains(_urlFormatter.getLocalPathStr()))
                     return false;
+            }
         }
         return true;
     }
@@ -230,9 +234,10 @@ public class HTTPclient {
 	public static void main(String[] args) {
 		String url = "http://riweb.tibeica.com/crawl/inst-prerequisites.html";
 		String ipAddress = "67.207.88.228";
+		String userAgent = "RIWEB_CRAWLER";
 		boolean logData = true;
 		
-		HTTPclient client = new HTTPclient(url, ipAddress, logData);
+		HTTPclient client = new HTTPclient(url, ipAddress, userAgent, logData);
 		
 		client.log("> Making request for [" + url + "] with address [" + ipAddress + "]", true);
 		
