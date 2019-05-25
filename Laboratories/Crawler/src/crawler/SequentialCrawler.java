@@ -83,6 +83,7 @@ public class SequentialCrawler {
     public static void main(String[] args) { 	
     	boolean logData = false;
     	String startURL = "http://riweb.tibeica.com/crawl/";
+    	String userAgent = "RIWEB_CRAWLER";
         Queue<URLformatter> urlQueue = new LinkedList<>();
         
         try {
@@ -123,17 +124,18 @@ public class SequentialCrawler {
                         DnsClient dnsClient = new DnsClient(domain, "8.8.8.8", 53, logData);
                         ipAddress = dnsClient.getIpAddres();
                         _domanIp.put(domain, ipAddress);
-                    } else {
-                        ipAddress = _domanIp.get(domain);
-                    }
-
-                    HTTPclient httpClient = new HTTPclient(fullDomainName, ipAddress, logData);
-                    if (!_domanIp.containsKey(domain)) {
+                        
+                        log("> Check for robots", true);
+                        HTTPclient httpClient = new HTTPclient(fullDomainName, ipAddress, userAgent, logData);       
                         if (!httpClient.checkForRobots()) {
                         	System.out.println("! Robots disallow -> " + fullDomainName);
                             continue;
                         }
+                    } else {
+                        ipAddress = _domanIp.get(domain);
                     }
+
+                    HTTPclient httpClient = new HTTPclient(fullDomainName, ipAddress, userAgent, logData);
                     if (!httpClient.sendRequest()) {
                     	System.out.println("! Request incomplete for " + fullDomainName);
                         continue;
@@ -177,7 +179,7 @@ public class SequentialCrawler {
                     
                     i++;
                     
-                    log(" -> " + fullDomainName, true);
+                    //log(" -> " + fullDomainName, true);
                 } catch (URISyntaxException e) {
                 	log("! error on link -> " + e.getMessage(), true);
                 }
