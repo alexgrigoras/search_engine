@@ -163,7 +163,7 @@ public class DnsClient {
      * @param args: arguments from the command line
      */
 	public static void main(String[] args) {
-		String domain = "http://riweb.tibeica.com/crawl/";
+		String domain = "riweb.tibeica.com";
 		String ipAddress = "8.8.8.8";
 		int dnsServPort = 53;
 		boolean logDataFlag = true;
