@@ -82,12 +82,22 @@ public class URLformatter {
      * @return
      */
     public boolean wasProcessed() {
-        if ((!Files.exists(Paths.get(_filesFolder + _scheme + _domain + _localPath + _resource)) || _blockedPath.contains(_localPathStr.substring(0, _localPathStr.lastIndexOf("/"))))) {
+        if ( Files.exists(Paths.get(_filesFolder + _scheme + _domain + _localPath + _resource)) == false 
+        		//|| _blockedPath.contains(_localPathStr.substring(0, _localPathStr.lastIndexOf("/")) ))) {
+        		&& _blockedPath.contains(_fullDomainName) == false ) {
             return false;
         }
         else {
             return true;
         }
+    }
+    
+    /**
+     * Add a url to the blacklist
+     * @param url: url to be added
+     */
+    public void addToBlackList(String url) {
+    	_blockedPath.add(url);
     }
 
     /**
