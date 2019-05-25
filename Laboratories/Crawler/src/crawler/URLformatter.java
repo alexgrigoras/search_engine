@@ -9,7 +9,8 @@ import java.util.HashSet;
 
 /**
  * URL Formatting class
- *
+ * @author alex_
+ * 
  */
 public class URLformatter {
 	public static HashSet<String> _blockedPath = new HashSet<>();

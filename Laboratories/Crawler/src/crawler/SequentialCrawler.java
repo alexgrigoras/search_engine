@@ -16,14 +16,9 @@ import java.util.List;
 import java.util.Queue;
 
 /**
-<<<<<<< HEAD
- * Sequential crawler class for extracting html pages from specified domains 
- * @author alex_
-=======
  * Sequential Web Crawler for extracting html pages from a queue of URLs
  * @author alex_
  *
->>>>>>> branch 'final_extra' of https://grigorasalex@bitbucket.org/grigorasalex/search_engine.git
  */
 public class SequentialCrawler {
     private static HashMap<String, String> _domanIp = new HashMap<>();
@@ -85,18 +80,9 @@ public class SequentialCrawler {
      * Main function for Sequential Crawler
      * @param args: arguments from the command line
      */
-<<<<<<< HEAD
     public static void main(String[] args) { 	
-=======
-    public static void main(String[] args) {
->>>>>>> branch 'final_extra' of https://grigorasalex@bitbucket.org/grigorasalex/search_engine.git
     	boolean logData = false;
-<<<<<<< HEAD
-=======
-    	
     	String startURL = "http://riweb.tibeica.com/crawl/";
-
->>>>>>> branch 'final_extra' of https://grigorasalex@bitbucket.org/grigorasalex/search_engine.git
         Queue<URLformatter> urlQueue = new LinkedList<>();
         
         try {
