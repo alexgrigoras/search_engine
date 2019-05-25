@@ -16,10 +16,10 @@ import java.net.InetAddress;
  *
  */
 public class DnsClient {
-    private String domain;						// URL address
-    private String ipAddr;						// DNS Server IP address
-	private int dnsServerPort;					// DNS Server Port
-	private boolean logData; 					// Log data flag
+    private String _domain;						// URL address
+    private String _ipAddr;						// DNS Server IP address
+	private int _dnsServerPort;					// DNS Server Port
+	private boolean _logData; 					// Log data flag
 
 	/**
 	 * Class constructor
@@ -27,11 +27,11 @@ public class DnsClient {
 	 * @param _ipAddr: DNS Server IP address
 	 * @param _dnsServerPort: DNS Server Port
 	 */
-    public DnsClient(String _domain, String _ipAddr, int _dnsServerPort, boolean _logData) {
-        domain = _domain;
-        ipAddr = _ipAddr;
-        dnsServerPort = _dnsServerPort;
-        logData = _logData;
+    public DnsClient(String domain, String ipAddr, int dnsServerPort, boolean logData) {
+        _domain = domain;
+        _ipAddr = ipAddr;
+        _dnsServerPort = dnsServerPort;
+        _logData = logData;
     }
     
 	/**
@@ -40,7 +40,7 @@ public class DnsClient {
 	 * @param newLine: if true newline is added to the end; else nothing happens
 	 */
 	private void log(String msg, boolean newLine) {
-		if(logData) {
+		if(_logData) {
 			if(newLine) {
 				System.out.println(msg);
 	        }
@@ -56,7 +56,7 @@ public class DnsClient {
      * @throws IOException: exception thrown by the function
      */
     public String getIpAddres() throws IOException {
-        InetAddress ipAddress = InetAddress.getByName(ipAddr);
+        InetAddress ipAddress = InetAddress.getByName(_ipAddr);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(baos);
@@ -71,8 +71,8 @@ public class DnsClient {
         dos.writeShort(0x0000);			// Authority Record Count: Specifies the number of resource records in the Authority section of the message. (“NS” stands for “name server”)
         dos.writeShort(0x0000);	        // Additional Record Count: Specifies the number of resource records in the Additional section of the message.
         // Question name
-        String[] domainParts = domain.split("\\.");
-        log("> URL: \"" + domain + "\" are " + domainParts.length + " parti: ", false);
+        String[] domainParts = _domain.split("\\.");
+        log("> URL: \"" + _domain + "\" are " + domainParts.length + " parti: ", false);
         for (int i = 0; i<domainParts.length; i++) {
             log("[" + domainParts[i] + "]", false);
             if(i<domainParts.length - 1) {
@@ -97,7 +97,7 @@ public class DnsClient {
          * Send DNS Request Frame
          */
         DatagramSocket socket = new DatagramSocket();
-        DatagramPacket dnsReqPacket = new DatagramPacket(dnsFrame, dnsFrame.length, ipAddress, dnsServerPort);
+        DatagramPacket dnsReqPacket = new DatagramPacket(dnsFrame, dnsFrame.length, ipAddress, _dnsServerPort);
         socket.send(dnsReqPacket);
 
         /*
