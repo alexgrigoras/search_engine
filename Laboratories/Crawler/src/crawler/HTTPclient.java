@@ -5,6 +5,11 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.URISyntaxException;
 
+enum RequestType {
+	Resource,
+	Robots
+}
+
 /**
  * HTTP client class for sending requests to specified URL
  *
@@ -52,11 +57,20 @@ public class HTTPclient {
 	/**
 	 * Build the HTTP request with method, URL and headers
 	 */
-    private void buildRequest() {
+    private void buildRequest(RequestType type) {
         httpRequest = new StringBuilder();
 
         httpRequest.append("GET ");
-        httpRequest.append(urlFormatter.get_localPathStr() + " ");
+        
+        if (type == RequestType.Resource)
+        {
+        	httpRequest.append(urlFormatter.get_localPathStr() + " ");	
+        }
+        else if (type == RequestType.Robots)
+        {
+        	httpRequest.append("/robots.txt");
+        }        
+        
         httpRequest.append("HTTP/1.1\r\n");
 
         httpRequest.append("Host: ");
@@ -78,7 +92,7 @@ public class HTTPclient {
      * @throws IOException
      */
     public boolean sendRequest() throws IOException {
-        buildRequest();
+        buildRequest(RequestType.Resource);
         Socket socket = new Socket(ipAddress, urlFormatter.get_port());
 
         PrintWriter pw = new PrintWriter(socket.getOutputStream());
@@ -182,8 +196,23 @@ public class HTTPclient {
      * @return true if robots allow crawling or false if not
      * @throws IOException
      */
-    public boolean checkForRobosts() throws IOException {
-    	return true;
+    public boolean checkForRobots() throws IOException {
+    	buildRequest(RequestType.Robots);
+        Socket socket = new Socket(InetAddress.getByName(ipAddress), urlFormatter.get_port());
+
+        PrintWriter pw = new PrintWriter(socket.getOutputStream());
+        pw.print(httpRequest);
+        pw.flush();
+
+        BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+        String line;
+        while ((line = br.readLine()) != null) {
+            if (line.contains("Disallow:"))
+                if (line.contains(urlFormatter.get_localPathStr()))
+                    return false;
+        }
+        return true;
     }
     
     /**
