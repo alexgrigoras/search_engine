@@ -19,9 +19,14 @@ public class URLformatter {
     private String _domain;
     private int _port;
     private String _localPath;
-    private String _page = "index.html";
+    private String _resource = "index.html";
     private String _filesFolder = "files/html/";
 
+    /**
+     * Class constructor
+     * @param fullDomainName: URL
+     * @throws URISyntaxException
+     */
     public URLformatter(String fullDomainName) throws URISyntaxException {
     	_fullDomainName = fullDomainName;
         URI uri = new URI(fullDomainName);
@@ -35,28 +40,48 @@ public class URLformatter {
         if (_localPathStr.contains(".")) {
             _localPath = _localPathStr.substring(0,
                     _localPathStr.lastIndexOf("/"));
-            _page = _localPathStr.substring(_localPathStr.lastIndexOf("/"));
+            _resource = _localPathStr.substring(_localPathStr.lastIndexOf("/"));
         }
     }
 
-    public String get_localPath() {
+    /**
+     * Get the local path
+     * @return
+     */
+    public String getLocalPath() {
         return _localPath;
     }
 
-    public void set_localPath(String _localPath) {
+    /**
+     * Set the local path
+     * @param _localPath
+     */
+    public void setLocalPath(String _localPath) {
         this._localPath = _localPath;
     }
 
-    public String get_page() {
-        return _page;
+    /**
+     * Get the resource
+     * @return
+     */
+    public String getResource() {
+        return _resource;
     }
 
-    public void set_page(String _page) {
-        this._page = _page;
+    /**
+     * Set the resource
+     * @param _page
+     */
+    public void setResource(String _page) {
+        this._resource = _page;
     }
 
+    /**
+     * Check if link was already processed
+     * @return
+     */
     public boolean wasProcessed() {
-        if ((!Files.exists(Paths.get(_filesFolder + _scheme + _domain + _localPath + _page)) || _blockedPath.contains(_localPathStr.substring(0, _localPathStr.lastIndexOf("/"))))) {
+        if ((!Files.exists(Paths.get(_filesFolder + _scheme + _domain + _localPath + _resource)) || _blockedPath.contains(_localPathStr.substring(0, _localPathStr.lastIndexOf("/"))))) {
             return false;
         }
         else {
@@ -64,6 +89,9 @@ public class URLformatter {
         }
     }
 
+    /**
+     * Create the folder path for storing the resources
+     */
     public void buildFolderPath() {
         try {
             Files.createDirectories(Paths.get("./" + _filesFolder + _scheme + _domain + _localPath));
@@ -72,31 +100,59 @@ public class URLformatter {
         }
     }
 
-    public void set_domain(String _domain) {
-        this._domain = _domain;
-    }
-
-    public String get_fullDomainName() {
+    /**
+     * Get the complete URL
+     * @return
+     */
+    public String getFullDomainName() {
     	return _fullDomainName;
     }
     
-    public String get_filesFolder() {
+    /**
+     * Get the folder where the files are stored
+     * @return
+     */
+    public String getFilesFolder() {
     	return _filesFolder;
     }
     
-    public String get_localPathStr() {
+    /**
+     * Get the complete local path
+     * @return
+     */
+    public String getLocalPathStr() {
         return _localPathStr;
     }
 
-    public String get_domain() {
+    /**
+     * Get the domain
+     * @return
+     */
+    public String getDomain() {
         return _domain;
     }
 
-    public String get_scheme() {
+    /**
+     * Set the domain
+     * @param _domain
+     */
+    public void setDomain(String _domain) {
+        this._domain = _domain;
+    }
+    
+    /**
+     * Get the scheme
+     * @return
+     */
+    public String getScheme() {
     	return _scheme;
     }
     
-    public int get_port() {
+    /**
+     * Get the port
+     * @return
+     */
+    public int getPort() {
         return _port;
     }
 }
