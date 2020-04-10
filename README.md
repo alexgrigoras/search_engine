@@ -12,7 +12,7 @@ Modules for the application are:
 - Search Module
 
 ## Documentation
-Available at ![documentation url](https://alexgrigoras.github.io/search_engine/index.html).
+Available at https://alexgrigoras.github.io/search_engine/index.html
 
 ## License
 MIT license.
