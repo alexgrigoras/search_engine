@@ -5,10 +5,11 @@ Search engine application made in Java programming language using Eclipse IDE.
 
 ## Architecture
 Modules for the application are:
-- Crawler
+- Web Crawler
 - DNS Client
 - HTTP Client
 - Parallel Indexer (master-workers)
+- MongoDB Database
 - Search Module
 
 ## Documentation
